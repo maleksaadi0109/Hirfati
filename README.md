@@ -29,6 +29,9 @@
   <br><br>
   <h3>Real-time Communication</h3>
   <img src="./public/screenshots/messages.png" alt="Messages" width="800">
+  <br><br>
+  <h3>Client Orders Dashboard</h3>
+  <img src="./public/screenshots/my_orders_dashboard.png" alt="My Orders Dashboard" width="800">
 </div>
 
 ---
