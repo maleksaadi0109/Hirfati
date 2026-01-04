@@ -109,6 +109,4 @@ To run this project locally:
 
 ---
 
-<div align="center">
-  <p>Made with ❤️ for Libya</p>
-</div>
+
