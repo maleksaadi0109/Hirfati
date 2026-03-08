@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { FormEventHandler, useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, Mail, Lock, Eye, EyeOff, Sparkles, Shield, Users, Star, Award, CheckCircle, TrendingUp, Zap } from 'lucide-react';
 import InputError from '@/components/input-error';
+import axios from 'axios';
 
-// Helper declaration for Ziggy routes
 declare function route(name: string, params?: any, absolute?: boolean): string;
 
 // Enhanced 3D Floating Shapes Component
@@ -57,7 +57,6 @@ const FloatingShapes = () => {
                 style={{ willChange: 'transform' }}
                 className="absolute bottom-20 left-1/3 w-[400px] h-[400px] bg-gradient-to-br from-yellow-500/25 to-orange-500/25 rounded-full blur-3xl"
             />
-
             {/* Floating geometric shapes with 3D effect */}
             {[...Array(6)].map((_, i) => (
                 <motion.div
@@ -95,7 +94,6 @@ const FloatingShapes = () => {
                     />
                 </motion.div>
             ))}
-
             {/* Animated grid pattern */}
             <div className="absolute inset-0 opacity-10">
                 <div className="absolute inset-0" style={{
@@ -106,22 +104,18 @@ const FloatingShapes = () => {
         </div>
     );
 };
-
 const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
 };
-
 const fadeInLeft = {
     hidden: { opacity: 0, x: -30 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] } }
 };
-
 const scaleIn = {
     hidden: { scale: 0.95, opacity: 0 },
     visible: { scale: 1, opacity: 1, transition: { duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] } }
 };
-
 const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -129,39 +123,41 @@ const staggerContainer = {
         transition: { staggerChildren: 0.08, delayChildren: 0.1 }
     }
 };
-
 export default function Login({ status, canResetPassword }: { status?: string, canResetPassword?: boolean }) {
     const [showPassword, setShowPassword] = useState(false);
-
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const [processing, setProcessing] = useState(false);
+    const [data, setDataState] = useState({
         email: '',
         password: '',
         remember: false,
     });
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+    const setData = (key: string, value: any) => {
+        setDataState(prev => ({ ...prev, [key]: value }));
+        // Clear error for this field when user types
+        if (errors[key as keyof typeof errors]) {
+            setErrors(prev => ({ ...prev, [key]: undefined }));
+        }
+    };
 
     // 3D tilt effect for form
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
-
     const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
     const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
-
     const springConfig = { stiffness: 150, damping: 20 };
     const rotateXSpring = useSpring(rotateX, springConfig);
     const rotateYSpring = useSpring(rotateY, springConfig);
-
     useEffect(() => {
         let rect: DOMRect | undefined;
         let rafq: number;
-
         const updateRect = () => {
             rect = document.getElementById('login-form')?.getBoundingClientRect();
         };
-
         // Update rect initially and on resize
         updateRect();
         window.addEventListener('resize', updateRect);
-
         const handleMouseMove = (e: globalThis.MouseEvent) => {
             if (!rect) return;
             // Use requestAnimationFrame to throttle updates
@@ -173,7 +169,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                 mouseY.set(e.clientY - centerY);
             });
         };
-
         window.addEventListener('mousemove', handleMouseMove);
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
@@ -182,17 +177,95 @@ export default function Login({ status, canResetPassword }: { status?: string, c
         };
     }, [mouseX, mouseY]);
 
-    const submit: FormEventHandler = (e) => {
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+        setProcessing(true);
+        setErrors({});
+
+        try {
+            const response = await axios.post('/api/login', {
+                email: data.email,
+                password: data.password,
+            });
+
+            const result = response.data;
+            const userData = result.data?.user;
+            const accessToken = result.data?.access_token;
+            const loginStatus = result.data?.status;
+
+            // Store token
+            if (accessToken) {
+                localStorage.setItem('access_token', accessToken);
+            }
+            // Store user data
+            if (userData) {
+                localStorage.setItem('user', JSON.stringify(userData));
+            }
+
+            // Handle status-based redirects
+            if (loginStatus === 'rejected') {
+                // Rejected provider → redirect to re-upload page
+                window.location.href = '/rejected-approval';
+                return;
+            }
+
+            // Determine role-based redirect
+            const role = userData?.role || userData?.data?.role;
+            if (role === 'admin') {
+                window.location.href = '/admin/craftsmen';
+            } else if (role === 'provider') {
+                window.location.href = '/worker/dashboard';
+            } else {
+                window.location.href = '/client/dashboard';
+            }
+
+        } catch (error: any) {
+            setProcessing(false);
+
+            if (error.response) {
+                const status = error.response.status;
+                const responseData = error.response.data;
+
+                if (status === 422) {
+                    // Validation errors
+                    if (responseData.errors) {
+                        const apiErrors: any = {};
+                        if (responseData.errors.email) {
+                            apiErrors.email = Array.isArray(responseData.errors.email)
+                                ? responseData.errors.email[0]
+                                : responseData.errors.email;
+                        }
+                        if (responseData.errors.password) {
+                            apiErrors.password = Array.isArray(responseData.errors.password)
+                                ? responseData.errors.password[0]
+                                : responseData.errors.password;
+                        }
+                        setErrors(apiErrors);
+                    } else if (responseData.message) {
+                        // Check for specific messages from LoginUserAction
+                        const msg = responseData.message;
+                        if (msg.includes('suspended') || msg.includes('blocked')) {
+                            window.location.href = '/account-suspended';
+                            return;
+                        }
+                        if (msg.includes('under review') || msg.includes('pending')) {
+                            window.location.href = '/pending-approval';
+                            return;
+                        }
+                        setErrors({ email: msg });
+                    }
+                } else {
+                    setErrors({ email: responseData?.message || 'Login failed. Please try again.' });
+                }
+            } else {
+                setErrors({ email: 'Network error. Please check your connection.' });
+            }
+        }
     };
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br from-slate-50 via-white to-orange-50/30 font-sans selection:bg-orange-200 relative">
             <Head title="Sign In - Hirfati" />
-
             {/* Subtle background pattern */}
             <div className="absolute inset-0 opacity-[0.015]">
                 <div className="absolute inset-0" style={{
@@ -200,7 +273,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                     backgroundSize: '40px 40px'
                 }} />
             </div>
-
             {/* Left Side - Enhanced Form */}
             <div className="w-full lg:w-1/2 flex flex-col justify-center p-6 sm:p-12 lg:p-16 xl:p-24 relative z-10 bg-white min-h-screen">
                 <motion.div
@@ -252,7 +324,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             </Link>
                         </motion.div>
                     </motion.div>
-
                     {/* Enhanced Welcome Header */}
                     <motion.div variants={fadeInLeft} className="mb-10">
                         <motion.div
@@ -277,7 +348,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             Enter your credentials to access your dashboard and start growing.
                         </p>
                     </motion.div>
-
                     {/* Enhanced Status Message */}
                     {status && (
                         <motion.div
@@ -295,7 +365,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             {status}
                         </motion.div>
                     )}
-
                     {/* Enhanced Form with 3D effect */}
                     <motion.form
                         variants={scaleIn}
@@ -341,7 +410,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             </div>
                             <InputError message={errors.email} />
                         </motion.div>
-
                         {/* Password Field with 3D depth */}
                         <motion.div
                             className="space-y-2"
@@ -353,16 +421,14 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                     <Lock className="w-4 h-4 text-orange-500" />
                                     Password
                                 </Label>
-                                {canResetPassword && (
-                                    <motion.div whileHover={{ x: 3 }}>
-                                        <Link
-                                            href={route('password.request')}
-                                            className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
-                                        >
-                                            Forgot password?
-                                        </Link>
-                                    </motion.div>
-                                )}
+                                <motion.div whileHover={{ x: 3 }}>
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </motion.div>
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
@@ -382,19 +448,17 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                     type="button"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        e.stopPropagation(); // يمنع انتقال النقرة للعناصر الخلفية
+                                        e.stopPropagation();
                                         setShowPassword(!showPassword);
                                     }}
-                                    // التغيير هنا: قمنا برفع z-index إلى 50 وأضفنا translate-z لضمان بروزه للأمام
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 cursor-pointer text-slate-400 hover:text-orange-600 transition-colors"
-                                    style={{ transform: 'translateZ(10px)' }} // هذا السطر مهم جداً في التصاميم ثلاثية الأبعاد
+                                    style={{ transform: 'translateZ(10px)' }}
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                             <InputError message={errors.password} />
                         </motion.div>
-
                         {/* Enhanced Remember Me */}
                         <div className="flex items-center justify-between pt-2">
                             <motion.label
@@ -412,7 +476,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 </span>
                             </motion.label>
                         </div>
-
                         {/* Enhanced Submit Button with 3D effect */}
                         <motion.div
                             whileHover={{ scale: 1.02, z: 30 }}
@@ -452,7 +515,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 />
                             </Button>
                         </motion.div>
-
                         {/* Divider */}
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center">
@@ -462,14 +524,13 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 <span className="px-4 bg-white text-slate-500 font-semibold">New to Hirfati?</span>
                             </div>
                         </div>
-
                         {/* Enhanced Create Account Link */}
                         <motion.div
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <a
-                                href={route('register')}
+                            <Link
+                                href="/register"
                                 className="group relative w-full h-14 flex items-center justify-center border-2 border-slate-200 hover:border-orange-300 text-slate-700 hover:text-orange-600 font-bold rounded-xl transition-all hover:bg-gradient-to-br from-orange-50 to-pink-50 shadow-sm hover:shadow-lg overflow-hidden"
                             >
                                 <span className="relative z-10 flex items-center gap-2">
@@ -478,10 +539,9 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 </span>
                                 {/* Border gradient on hover */}
                                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 opacity-0 group-hover:opacity-10 transition-opacity" />
-                            </a>
+                            </Link>
                         </motion.div>
                     </motion.form>
-
                     {/* Trust badges */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -505,7 +565,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                         ))}
                     </motion.div>
                 </motion.div>
-
                 {/* Footer Copyright - Mobile Only */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -516,7 +575,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                     <p className="text-xs text-slate-400">&copy; 2025 Hirfati. All rights reserved.</p>
                 </motion.div>
             </div>
-
             {/* Right Side - Enhanced 3D Visuals */}
             <div className="hidden lg:block lg:w-1/2 relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden sticky top-0 h-screen">
                 {/* 3D Background */}
@@ -527,7 +585,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-600/20 via-transparent to-transparent pointer-events-none" />
                 </div>
-
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col justify-between p-12 xl:p-20 z-10">
                     {/* Top Stats with 3D cards */}
@@ -562,7 +619,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             </motion.div>
                         ))}
                     </motion.div>
-
                     {/* Center Content with enhanced 3D */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -587,7 +643,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 <span className="text-orange-200 text-sm font-bold uppercase tracking-wider">Libya's #1 Service Platform</span>
                                 <TrendingUp className="w-5 h-5 text-orange-300" />
                             </motion.div>
-
                             <motion.h2
                                 className="text-5xl xl:text-6xl font-bold text-white mb-6 leading-[1.1]"
                                 initial={{ opacity: 0, y: 20 }}
@@ -599,7 +654,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                     Build your future.
                                 </span>
                             </motion.h2>
-
                             <motion.p
                                 className="text-slate-300 text-xl leading-relaxed font-medium"
                                 initial={{ opacity: 0 }}
@@ -609,7 +663,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 Join thousands of professionals and clients connecting every day on Libya's premier marketplace.
                             </motion.p>
                         </div>
-
                         {/* Enhanced Testimonial Card with 3D */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -621,7 +674,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                         >
                             {/* 3D glow effect */}
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-pink-500/30 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity" />
-
                             <div className="relative bg-white/10 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-2xl">
                                 <div className="flex items-start gap-4">
                                     <motion.div
@@ -659,7 +711,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 </div>
                             </div>
                         </motion.div>
-
                         {/* Achievement badges */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -684,7 +735,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             ))}
                         </motion.div>
                     </motion.div>
-
                     {/* Bottom Footer with enhanced links */}
                     <motion.div
                         initial={{ opacity: 0 }}

@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Responses\CustomLoginResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
@@ -20,6 +22,12 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Custom login response: checks provider status before redirecting
+        $this->app->singleton(
+            LoginResponseContract::class,
+            CustomLoginResponse::class
+        );
+
         $this->app->instance(
             \Laravel\Fortify\Contracts\RegisterResponse::class,
             new class implements \Laravel\Fortify\Contracts\RegisterResponse {

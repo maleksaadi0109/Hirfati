@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\User;
+use App\Models\Portfolio;
+use App\Models\Booking;
+use App\Models\Review;
+
+class Provider extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'profession',
+        'years_of_experience',
+        'verification_document_path',
+        'application_status',
+        'bio',
+        'hourly_rate',
+        'is_available',
+    ];
+
+    protected $casts = [
+        'is_available' => 'boolean',
+        'hourly_rate' => 'decimal:2',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function portfolios()
+    {
+        return $this->hasMany(Portfolio::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+}
