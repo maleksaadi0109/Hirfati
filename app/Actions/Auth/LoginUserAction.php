@@ -42,13 +42,20 @@ class LoginUserAction
         // Block providers who are not approved yet
         if ($user->role === User::ROLE_PROVIDER) {
             $status = $user->provider?->application_status;
-
-            if ($status === 'pending') {
-                 $this->deleteSession();
-
-                throw ValidationException::withMessages([
-                    'email' => ['Your provider application is under review. Please wait for admin approval.'],
-                ]);
+if ($status === 'pending') {
+                // DO NOT delete session or throw exception here anymore!
+                
+                $token = $user->createToken(
+                    'auth_token',
+                    ['*'],
+                    now()->addMinutes(5)
+                )->plainTextToken;
+                return [
+                    'user' => $user,
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                    'status' => 'pending',
+                ];
             }
 
             if ($status === 'rejected') {

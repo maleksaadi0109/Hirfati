@@ -37,6 +37,8 @@ class UserResource
             'city' => $user->city,
             'latitude' => $user->latitude,
             'longitude' => $user->longitude,
+            'picture' => $user->picture ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->picture) : null,
+            'birthday' => $user->birthday ? \Carbon\Carbon::parse($user->birthday)->format('Y-m-d') : null,
         ];
     }
 }

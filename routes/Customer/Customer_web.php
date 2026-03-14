@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+ Route::get('/client/dashboard', function () {
+        return Inertia::render('client/Dashboard');
+})->name('client.dashboard');
+   Route::get('/client/messages', function () {
+        return Inertia::render('client/Messages');
+    })->name('client.messages');
+
+     Route::get('/client/find-pros', function () {
+         return Inertia::render('client/FindPros');
+     })->name('client.find-pros');
+
+     Route::get('/my-orders', function () {
+         return Inertia::render('client/MyOrders');
+     })->name('client.orders');
+
+     Route::get('/client/my-orders', function () {
+         return Inertia::render('client/MyOrders');
+     })->name('client.my-orders');
+
+      Route::get('/client/profile', function () {
+          return Inertia::render('client/Profile');
+      })->name('client.profile');
+
+     Route::get('/client/addresses/create', function () {
+         return Inertia::render('client/AddressCreate');
+     })->name('client.addresses.create');
+
+     Route::get('/client/addresses/{address}/edit', function (string $address) {
+         return Inertia::render('client/AddressEdit', [
+             'addressId' => $address,
+         ]);
+     })->name('client.addresses.edit');

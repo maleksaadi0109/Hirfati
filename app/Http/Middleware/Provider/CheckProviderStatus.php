@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Http\Middleware\Provider;
 
 use Closure;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,18 +14,9 @@ class CheckProviderStatus
         $user = $request->user();
 
         // Check if user is logged in, is a provider, and has a rejected application
-        if ($user && $user->role === 'provider' && $user->provider?->application_status === 'rejected') {
+        if ($user && $user->role === 'provider' && $user->provider?->application_status === 'rejected' ||$user->provider?->application_status === 'pending') {
             
-            // Allow them to access the "resubmit documents" API endpoints (if you have them)
-            // or maybe a logout endpoint, otherwise block normal API routes.
-            $allowedRoutes = ['provider.resubmit', 'logout', 'user.profile'];
-
-            if (! in_array($request->route()->getName(), $allowedRoutes)) {
-                return response()->json([
-                    'message' => 'Your application was rejected.',
-                    'status' => 'rejected'
-                ], 403); // 403 Forbidden
-            }
+           abort(403);
         }
 
         return $next($request);

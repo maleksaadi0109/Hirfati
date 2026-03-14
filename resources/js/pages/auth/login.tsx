@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { FormEventHandler, useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -104,19 +104,19 @@ const FloatingShapes = () => {
         </div>
     );
 };
-const fadeInUp = {
+const fadeInUp: any = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
 };
-const fadeInLeft = {
+const fadeInLeft: any = {
     hidden: { opacity: 0, x: -30 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] } }
 };
-const scaleIn = {
+const scaleIn: any = {
     hidden: { scale: 0.95, opacity: 0 },
     visible: { scale: 1, opacity: 1, transition: { duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] } }
 };
-const staggerContainer = {
+const staggerContainer: any = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
@@ -141,41 +141,7 @@ export default function Login({ status, canResetPassword }: { status?: string, c
         }
     };
 
-    // 3D tilt effect for form
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-    const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
-    const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
-    const springConfig = { stiffness: 150, damping: 20 };
-    const rotateXSpring = useSpring(rotateX, springConfig);
-    const rotateYSpring = useSpring(rotateY, springConfig);
-    useEffect(() => {
-        let rect: DOMRect | undefined;
-        let rafq: number;
-        const updateRect = () => {
-            rect = document.getElementById('login-form')?.getBoundingClientRect();
-        };
-        // Update rect initially and on resize
-        updateRect();
-        window.addEventListener('resize', updateRect);
-        const handleMouseMove = (e: globalThis.MouseEvent) => {
-            if (!rect) return;
-            // Use requestAnimationFrame to throttle updates
-            cancelAnimationFrame(rafq);
-            rafq = requestAnimationFrame(() => {
-                const centerX = rect!.left + rect!.width / 2;
-                const centerY = rect!.top + rect!.height / 2;
-                mouseX.set(e.clientX - centerX);
-                mouseY.set(e.clientY - centerY);
-            });
-        };
-        window.addEventListener('mousemove', handleMouseMove);
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('resize', updateRect);
-            cancelAnimationFrame(rafq);
-        };
-    }, [mouseX, mouseY]);
+
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
@@ -203,6 +169,12 @@ export default function Login({ status, canResetPassword }: { status?: string, c
             }
 
             // Handle status-based redirects
+            if (loginStatus === 'pending') {
+                // Pending provider → redirect to pending page
+                window.location.href = '/pending-approval';
+                return;
+            }
+
             if (loginStatus === 'rejected') {
                 // Rejected provider → redirect to re-upload page
                 window.location.href = '/rejected-approval';
@@ -370,18 +342,9 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                         variants={scaleIn}
                         onSubmit={submit}
                         className="space-y-6"
-                        // FIX: Applied the rotate springs here!
-                        style={{
-                            rotateX: rotateXSpring,
-                            rotateY: rotateYSpring,
-                            transformStyle: 'preserve-3d',
-                        }}
                     >
-                        {/* Email Field with 3D depth */}
                         <motion.div
                             className="space-y-2"
-                            whileHover={{ z: 20 }}
-                            style={{ transformStyle: 'preserve-3d' }}
                         >
                             <Label htmlFor="email" className="text-slate-700 font-bold text-sm flex items-center gap-2">
                                 <Mail className="w-4 h-4 text-orange-500" />
@@ -410,21 +373,18 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             </div>
                             <InputError message={errors.email} />
                         </motion.div>
-                        {/* Password Field with 3D depth */}
                         <motion.div
                             className="space-y-2"
-                            whileHover={{ z: 20 }}
-                            style={{ transformStyle: 'preserve-3d' }}
                         >
                             <div className="flex justify-between items-center">
                                 <Label htmlFor="password" className="text-slate-700 font-bold text-sm flex items-center gap-2">
                                     <Lock className="w-4 h-4 text-orange-500" />
                                     Password
                                 </Label>
-                                <motion.div whileHover={{ x: 3 }}>
+                                <motion.div whileHover={{ x: 3 }} style={{ transform: 'translateZ(20px)' }} className="relative z-50">
                                     <Link
                                         href="/forgot-password"
-                                        className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors"
+                                        className="text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline transition-colors block p-2 -mr-2"
                                     >
                                         Forgot password?
                                     </Link>
@@ -452,7 +412,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                         setShowPassword(!showPassword);
                                     }}
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 cursor-pointer text-slate-400 hover:text-orange-600 transition-colors"
-                                    style={{ transform: 'translateZ(10px)' }}
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -476,11 +435,9 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 </span>
                             </motion.label>
                         </div>
-                        {/* Enhanced Submit Button with 3D effect */}
                         <motion.div
-                            whileHover={{ scale: 1.02, z: 30 }}
+                            whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            style={{ transformStyle: 'preserve-3d' }}
                         >
                             <Button
                                 disabled={processing}
@@ -606,7 +563,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 transition={{ delay: 0.7 + idx * 0.1 }}
                                 whileHover={{ y: -5, scale: 1.05 }}
                                 className="relative group"
-                                style={{ transformStyle: 'preserve-3d' }}
                             >
                                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity`} />
                                 <div className="relative bg-white/10 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/20 shadow-2xl">
@@ -670,7 +626,6 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                             transition={{ delay: 1, type: 'spring' }}
                             whileHover={{ scale: 1.03, y: -5 }}
                             className="relative group"
-                            style={{ transformStyle: 'preserve-3d' }}
                         >
                             {/* 3D glow effect */}
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-pink-500/30 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity" />

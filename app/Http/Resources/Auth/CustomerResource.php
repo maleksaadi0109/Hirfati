@@ -24,6 +24,8 @@ class CustomerResource extends JsonResource
             'city' => $this->user?->city,
             'latitude' => $this->user?->latitude,
             'longitude' => $this->user?->longitude,
+            'picture' => $this->user?->picture ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->user->picture) : null,
+            'birthday' => $this->user?->birthday ? \Carbon\Carbon::parse($this->user->birthday)->format('Y-m-d') : null,
             'user' => $this->whenLoaded('user', function () {
                 return [
                     'id' => $this->user->id,

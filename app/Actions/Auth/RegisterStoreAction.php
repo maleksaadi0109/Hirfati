@@ -31,8 +31,19 @@ class RegisterStoreAction
                 ->store(self::PENDING_DOCUMENTS_DIR, self::REGISTRATION_FILE_DISK);
         }
 
+        $tempPicturePath = null;
+        if ($request->hasFile('picture')) {
+            $tempPicturePath = $request->file('picture')
+                ->storeAs(
+                    self::PENDING_DOCUMENTS_DIR, 
+                    Str::uuid()->toString() . '.' . $request->file('picture')->extension(), 
+                    'public'
+                );
+        }
+
         $code = (string) random_int(100000, 999999);
         unset($validated['id_document']);
+        unset($validated['picture']);
 
         $cacheKey = self::REGISTRATION_CACHE_PREFIX . $pendingToken;
         Cache::put($cacheKey, [
@@ -41,6 +52,7 @@ class RegisterStoreAction
             'attempts'   => 0,
             'send_count' => 1,
             'file_path'  => $tempFilePath,
+            'picture_path' => $tempPicturePath,
         ], now()->addMinutes(self::CODE_LIFETIME_MINUTES));
 
         try {
@@ -52,6 +64,9 @@ class RegisterStoreAction
 
             if ($tempFilePath && Storage::disk(self::REGISTRATION_FILE_DISK)->exists($tempFilePath)) {
                 Storage::disk(self::REGISTRATION_FILE_DISK)->delete($tempFilePath);
+            }
+            if ($tempPicturePath && Storage::disk('public')->exists($tempPicturePath)) {
+                Storage::disk('public')->delete($tempPicturePath);
             }
 
             throw $mailException;

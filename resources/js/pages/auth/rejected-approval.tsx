@@ -227,12 +227,24 @@ export default function RejectedApproval() {
                                     <p className="text-slate-600 font-medium mb-6">
                                         Thank you! Your new document has been sent to our team for review. You will be notified shortly.
                                     </p>
-                                    <Link
-                                        href="/login"
-                                        className="inline-flex items-center justify-center w-full h-12 bg-white text-slate-700 hover:text-orange-600 border border-slate-200 font-bold rounded-xl transition-all shadow-sm group"
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const token = localStorage.getItem('access_token');
+                                                await axios.post('/web-logout', {}, {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                });
+                                            } catch (e) {
+                                                // Ignore logout errors
+                                            }
+                                            localStorage.removeItem('access_token');
+                                            localStorage.removeItem('user');
+                                            window.location.href = '/login';
+                                        }}
+                                        className="inline-flex items-center justify-center w-full h-12 bg-white text-slate-700 hover:text-orange-600 border border-slate-200 font-bold rounded-xl transition-all shadow-sm group cursor-pointer"
                                     >
                                         <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Sign out for now
-                                    </Link>
+                                    </button>
                                 </motion.div>
                             )}
 

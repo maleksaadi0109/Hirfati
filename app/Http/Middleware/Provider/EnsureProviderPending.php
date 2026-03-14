@@ -3,11 +3,11 @@
 namespace App\Http\Middleware\Provider;
 
 use Closure;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\User;
 
-class EnsureProviderRejected
+class EnsureProviderPending
 {
     /**
      * Handle an incoming request.
@@ -16,15 +16,16 @@ class EnsureProviderRejected
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+          $user = $request->user();
+         
 
         if (! $user || $user->role !== User::ROLE_PROVIDER) {
             abort(403);
         }
 
-        if ($user->provider?->application_status !== 'rejected') {
+        if ($user->provider?->application_status !== 'pending') {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Status is not rejected'], 403);
+                return response()->json(['message' => 'Status is not pending'], 403);
             }
             return redirect()->route('home');
         }

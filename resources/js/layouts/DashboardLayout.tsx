@@ -19,14 +19,17 @@ const DashboardBackgroundShapes = () => (
 
 export default function DashboardLayout({ children, title = "Dashboard" }: any) {
  const { auth } = usePage<any>().props;
- const [localUserData] = useState(() => {
- try {
- return JSON.parse(localStorage.getItem('herfati_user_data') || 'null');
- } catch { return null; }
- });
+    const [localUserData] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('user') || localStorage.getItem('herfati_user_data') || 'null');
+        } catch { return null; }
+    });
 
- const user = auth?.user || localUserData || { firstName: "Guest", lastName: "User", role: "client" };
+  const user = auth?.user || localUserData || { name: "Malek Saadi", firstName: "Malek", lastName: "Saadi", role: "client" };
  const role = user.role || localStorage.getItem('herfati_user_role') || 'client';
+ 
+ const isClientRoute = typeof window !== 'undefined' && (window.location.pathname.includes('/client') || window.location.pathname.includes('/my-orders'));
+ const displayRole = isClientRoute ? 'client' : (role === 'customer' ? 'client' : role);
 
  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -80,7 +83,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }: any) 
  <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-4 custom-scrollbar">
  <div className="px-4 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Main Menu</div>
 
- {role === 'client' ? (
+ {displayRole === 'client' ? (
  <NavItem icon={<LayoutDashboard />} label="Dashboard" active={window.location.pathname.includes('/client/dashboard')} href="/client/dashboard" />
  ) : (
  <NavItem icon={<LayoutDashboard />} label="Workspace" active={window.location.pathname.includes('/worker/dashboard')} href="/worker/dashboard" />
@@ -91,17 +94,17 @@ export default function DashboardLayout({ children, title = "Dashboard" }: any) 
  label="Messages"
  badge={2}
  active={window.location.pathname.includes('/messages')}
- href={role === 'client' ? '/client/messages' : '/worker/messages'}
+ href={displayRole === 'client' ? '/client/messages' : '/worker/messages'}
  />
 
  <div className="my-6 border-t border-slate-100/50 mx-4"></div>
  <div className="px-4 py-2 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Workspace</div>
 
- {role === 'client' ? (
+ {displayRole === 'client' ? (
  <>
- <NavItem icon={<ShoppingBag />} label="My Orders" />
- <NavItem icon={<Search />} label="Find Pros" />
- <NavItem icon={<User />} label="My Profile" />
+ <NavItem icon={<ShoppingBag />} label="My Orders" href="/my-orders" active={window.location.pathname.includes('/my-orders')} />
+ <NavItem icon={<Search />} label="Find Pros" href="/client/find-pros" active={window.location.pathname.includes('/client/find-pros')} />
+ <NavItem icon={<User />} label="My Profile" href="/client/profile" active={window.location.pathname.includes('/client/profile')} />
  </>
  ) : (
  <>
@@ -147,10 +150,10 @@ export default function DashboardLayout({ children, title = "Dashboard" }: any) 
  </button>
  <div className="flex flex-col">
  <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
- {role === 'professional' ? 'Pro Workspace' : 'Overview'}
+ {displayRole !== 'client' ? 'Pro Workspace' : 'Overview'}
  </h1>
  <p className="text-sm text-slate-500 font-medium hidden sm:block">
- {role === 'professional' ? "Ready to make some money today?" : "Welcome back, manage your home services."}
+ {displayRole !== 'client' ? "Ready to make some money today?" : "Welcome back, manage your home services."}
  </p>
  </div>
  </div>

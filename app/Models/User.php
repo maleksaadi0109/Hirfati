@@ -36,6 +36,8 @@ class User extends Authenticatable
         'latitude',
         'longitude',
         'is_blocked',
+        'picture',
+        'birthday',
     ];
 
     /**

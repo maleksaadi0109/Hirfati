@@ -1,15 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Link } from 'lucide-react';
+import { TrendingUp, Link as LinkIcon } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 
 export const NavItem = ({ icon, label, active, badge, href = "#" }: any) => (
- <a href={href} className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group duration-300 ${active ? 'bg-orange-50 text-orange-600 shadow-sm border border-orange-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent'}`}>
- <div className="flex items-center gap-3.5">
- {React.cloneElement(icon, { className: `w-5 h-5 transition-colors duration-300 ${active ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'}` })}
- <span className={`font-semibold text-sm tracking-wide ${active ? 'font-bold' : ''}`}>{label}</span>
- </div>
- {badge && <span className="bg-orange-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-orange-500/30">{badge}</span>}
- </a>
+    <Link 
+        href={href} 
+        className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group duration-300 ${
+            active 
+            ? 'bg-orange-50 text-orange-600 shadow-sm border border-orange-100' 
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+        }`}
+    >
+        <div className="flex items-center gap-3.5">
+            {React.cloneElement(icon, { 
+                className: `w-5 h-5 transition-colors duration-300 ${active ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600'}` 
+            })}
+            <span className={`font-semibold text-sm tracking-wide ${active ? 'font-bold' : ''}`}>{label}</span>
+        </div>
+        {badge && (
+            <span className="bg-orange-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg shadow-orange-500/30">
+                {badge}
+            </span>
+        )}
+    </Link>
 );
 
 export const StatCard = ({ title, value, icon, color, trend, trendUp, delay = 0 }: any) => {

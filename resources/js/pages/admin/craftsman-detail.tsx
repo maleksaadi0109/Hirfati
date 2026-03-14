@@ -68,10 +68,18 @@ export default function CraftsmanDetail() {
     const documentContainerRef = useRef<HTMLDivElement>(null);
 
     const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token') || '';
+
+    // Read CSRF token from cookie for stateful API requests
+    const getCsrfToken = () => {
+        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    };
+
     const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'X-XSRF-TOKEN': getCsrfToken(),
     };
 
     // Extract provider ID from URL
@@ -197,12 +205,18 @@ export default function CraftsmanDetail() {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/logout', { method: 'POST', headers });
-        } catch { /* ignore */ }
+    const handleLogout = () => {
         localStorage.clear();
-        window.location.href = '/login';
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/web-logout';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
     };
 
     const zoomIn = () => setZoom(prev => Math.min(prev + 0.25, 4));

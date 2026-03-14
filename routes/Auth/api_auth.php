@@ -57,3 +57,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/verify',            [EmailVerificationController::class, 'verify']);
     });
 });
+
+// Define routes that require authentication
+

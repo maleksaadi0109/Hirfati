@@ -35,7 +35,7 @@ class VerifyRegistrationCodeAction
         // 2. Check max attempts
         if (($pending['attempts'] ?? 0) >= self::MAX_ATTEMPTS) {
             // Clean up: delete cache + temp file
-            $this->cleanup($cacheKey, $pending['file_path'] ?? null);
+            $this->cleanup($cacheKey, $pending['file_path'] ?? null, $pending['picture_path'] ?? null);
 
             throw new HttpResponseException(response()->json([
                 'message' => 'Too many failed attempts. Please register again.',
@@ -55,8 +55,9 @@ class VerifyRegistrationCodeAction
         }
 
         // 4. Code is correct — NOW create the user in the database
+        $finalPicturePath = null;
         try {
-            $user = DB::transaction(function () use ($pending) {
+            $user = DB::transaction(function () use ($pending, &$finalPicturePath) {
                 $data = $pending['data'];
 
                 // Move temp file to final location if it exists
@@ -64,6 +65,11 @@ class VerifyRegistrationCodeAction
                 if (!empty($pending['file_path'])) {
                     $finalDocPath = str_replace('temp/pending_registrations/', 'verification_documents/', $pending['file_path']);
                     Storage::disk(self::REGISTRATION_FILE_DISK)->move($pending['file_path'], $finalDocPath);
+                }
+
+                if (!empty($pending['picture_path'])) {
+                    $finalPicturePath = str_replace('temp/pending_registrations/', 'profile_pictures/', $pending['picture_path']);
+                    Storage::disk('public')->copy($pending['picture_path'], $finalPicturePath);
                 }
 
                 // Create the user
@@ -78,6 +84,8 @@ class VerifyRegistrationCodeAction
                     'longitude'       => $data['longitude'] ?? null,
                     'city'            => $data['city'] ?? null,
                     'email_verified_at' => now(), // Email is verified!
+                    'picture'         => $finalPicturePath,
+                    'birthday'        => $data['birthday'] ?? null,
                 ]);
 
                 // Create role-specific profile
@@ -101,11 +109,19 @@ class VerifyRegistrationCodeAction
             $driverCode = $e->errorInfo[1] ?? null;
 
             if ($sqlState === '23000' || $sqlState === '23505' || (int) $driverCode === 1062) {
-                $this->cleanup($cacheKey, $pending['file_path'] ?? null);
+                $this->cleanup($cacheKey, $pending['file_path'] ?? null, $pending['picture_path'] ?? null);
+
+                if ($finalPicturePath && Storage::disk('public')->exists($finalPicturePath)) {
+                    Storage::disk('public')->delete($finalPicturePath);
+                }
 
                 throw new HttpResponseException(response()->json([
                     'message' => 'Email or phone number is already registered.',
                 ], 409));
+            }
+
+            if ($finalPicturePath && Storage::disk('public')->exists($finalPicturePath)) {
+                Storage::disk('public')->delete($finalPicturePath);
             }
 
             throw $e;
@@ -114,7 +130,10 @@ class VerifyRegistrationCodeAction
         // 5. Create auth token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // 6. Clean up cache
+        // 6. Clean up cache and temp files
+        if (!empty($pending['picture_path']) && Storage::disk('public')->exists($pending['picture_path'])) {
+            Storage::disk('public')->delete($pending['picture_path']);
+        }
         Cache::forget($cacheKey);
 
         return [
@@ -126,12 +145,16 @@ class VerifyRegistrationCodeAction
     /**
      * Clean up cache and temp files.
      */
-    private function cleanup(string $cacheKey, ?string $filePath): void
+    private function cleanup(string $cacheKey, ?string $filePath, ?string $picturePath = null): void
     {
         Cache::forget($cacheKey);
 
         if ($filePath && Storage::disk(self::REGISTRATION_FILE_DISK)->exists($filePath)) {
             Storage::disk(self::REGISTRATION_FILE_DISK)->delete($filePath);
+        }
+
+        if ($picturePath && Storage::disk('public')->exists($picturePath)) {
+            Storage::disk('public')->delete($picturePath);
         }
     }
 }

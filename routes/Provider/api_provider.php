@@ -12,6 +12,6 @@ use App\Http\Controllers\Api\Provider\ResubmitApplicationController;
 |
 */
 
-Route::middleware(['auth:sanctum', 'role:provider'])->prefix('provider')->group(function () {
+Route::middleware(['auth:sanctum', 'rejected_provider'])->prefix('provider')->group(function () {
     Route::post('/resubmit', ResubmitApplicationController::class)->name('provider.resubmit');
 });

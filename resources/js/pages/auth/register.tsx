@@ -101,6 +101,8 @@ export default function Register() {
         profession: '',
         experience: '',
         id_document: null as File | null,
+        picture: null as File | null,
+        birthday: '',
     });
 
     const setData = (key: string, value: any) => {
@@ -114,7 +116,7 @@ export default function Register() {
         }
     };
 
-    const totalSteps = 4; // Step 1: Basic Info, Step 2: Role, Step 3: Location, Step 4: Verification
+    const totalSteps = 5; // Step 1: Basic Info, Step 2: Role, Step 3: Location, Step 4: Profile Details, Step 5: Verification
 
     const detectLocation = () => {
         setIsDetecting(true);
@@ -176,6 +178,9 @@ export default function Register() {
             setDirection(1);
             setCurrentStep(3);
         } else if (currentStep === 3) {
+            setDirection(1);
+            setCurrentStep(4);
+        } else if (currentStep === 4) {
             handleSubmitRegistration();
         }
     };
@@ -216,15 +221,21 @@ export default function Register() {
             if (data.id_document) {
                 formData.append('id_document', data.id_document);
             }
+            if (data.picture instanceof File) {
+                formData.append('picture', data.picture);
+            }
+            if (data.birthday) {
+                formData.append('birthday', data.birthday);
+            }
 
-            const response = await axios.post('/register', formData, {
+            const response = await axios.post('/api/register', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             if (response.data.data?.pending_token) {
                 setPendingToken(response.data.data.pending_token);
                 setDirection(1);
-                setCurrentStep(4); // Go to verification step
+                setCurrentStep(5); // Go to verification step
             }
         } catch (error: unknown) {
             setIsLoading(false);
@@ -259,7 +270,7 @@ export default function Register() {
         setVerifyError('');
 
         try {
-            const response = await axios.post('/register/verify', {
+            const response = await axios.post('/api/register/verify', {
                 pending_token: pendingToken,
                 code: verificationCode,
             });
@@ -392,27 +403,27 @@ export default function Register() {
                     </motion.div>
 
                     {/* Header */}
-                    <motion.div variants={fadeInLeft} className="mb-8">
-                        <motion.div className="flex items-center gap-3 mb-6" initial={{ width: 0 }} animate={{ width: 'auto' }} transition={{ delay: 0.3, duration: 0.6 }}>
-                            <div className="h-1 w-12 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 rounded-full shadow-lg shadow-orange-500/50" />
-                            <span className="text-orange-600 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" />
-                                {currentStep === 1 ? 'Start your journey' : currentStep === 2 ? 'Choose your role' : 'Almost there!'}
-                            </span>
+                    {currentStep <= 2 && (
+                        <motion.div variants={fadeInLeft} className="mb-8">
+                            <motion.div className="flex items-center gap-3 mb-6" initial={{ width: 0 }} animate={{ width: 'auto' }} transition={{ delay: 0.3, duration: 0.6 }}>
+                                <div className="h-1 w-12 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-300 rounded-full shadow-lg shadow-orange-500/50" />
+                                <span className="text-orange-600 font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4" />
+                                    {currentStep === 1 ? 'Start your journey' : 'Choose your role'}
+                                </span>
+                            </motion.div>
+                            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 tracking-tight leading-[1.1]">
+                                {currentStep === 1 ? (
+                                    <>Create your<br /><span className="bg-gradient-to-r from-orange-600 via-orange-500 to-pink-500 bg-clip-text text-transparent">account</span></>
+                                ) : (
+                                    <>Tell us about<br /><span className="bg-gradient-to-r from-orange-600 via-orange-500 to-pink-500 bg-clip-text text-transparent">yourself</span></>
+                                )}
+                            </h1>
+                            <p className="text-slate-600 text-lg font-medium">
+                                {currentStep === 1 ? 'Join thousands of professionals and grow your business today.' : 'This helps us personalize your experience.'}
+                            </p>
                         </motion.div>
-                        <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 tracking-tight leading-[1.1]">
-                            {currentStep === 1 ? (
-                                <>Create your<br /><span className="bg-gradient-to-r from-orange-600 via-orange-500 to-pink-500 bg-clip-text text-transparent">account</span></>
-                            ) : currentStep === 2 ? (
-                                <>Tell us about<br /><span className="bg-gradient-to-r from-orange-600 via-orange-500 to-pink-500 bg-clip-text text-transparent">yourself</span></>
-                            ) : (
-                                <>Verify your<br /><span className="bg-gradient-to-r from-orange-600 via-orange-500 to-pink-500 bg-clip-text text-transparent">email</span></>
-                            )}
-                        </h1>
-                        <p className="text-slate-600 text-lg font-medium">
-                            {currentStep === 1 ? 'Join thousands of professionals and grow your business today.' : currentStep === 2 ? 'This helps us personalize your experience.' : 'Enter the 6-digit code we sent to your email.'}
-                        </p>
-                    </motion.div>
+                    )}
 
                     {/* General Error */}
                     {errors.general && (
@@ -442,104 +453,118 @@ export default function Register() {
                             >
                                 {/* STEP 1: Basic Info */}
                                 {currentStep === 1 && (
-                                    <div className="space-y-4">
-                                        <div className="flex gap-4">
-                                            <motion.div className="space-y-2 flex-1">
+                                    <div className="space-y-5">
+                                        {/* Name Row */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <motion.div className="space-y-2 relative">
                                                 <Label htmlFor="first_name" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                    <User className="w-4 h-4 text-orange-500" /> First Name
+                                                    First Name
                                                 </Label>
                                                 <div className="relative group">
                                                     <InputWrapper icon={<User />} />
-                                                    <input id="first_name" name="first_name" value={data.first_name} onChange={e => setData('first_name', e.target.value)} required placeholder="John" className="w-full h-14 pl-12 pr-4 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" autoFocus />
+                                                    <input id="first_name" name="first_name" value={data.first_name} onChange={e => setData('first_name', e.target.value)} required placeholder="e.g. John" className={`w-full h-14 pl-12 pr-10 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.first_name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : data.first_name ? 'border-green-300 focus:border-green-500 focus:ring-green-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} autoFocus />
+                                                    {data.first_name && !errors.first_name && (
+                                                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <InputError message={errors.first_name} />
+                                                <InputError message={errors.first_name} className="absolute -bottom-5" />
                                             </motion.div>
-                                            <motion.div className="space-y-2 flex-1">
+
+                                            <motion.div className="space-y-2 relative">
                                                 <Label htmlFor="last_name" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                    <User className="w-4 h-4 text-orange-500" /> Last Name
+                                                    Last Name
                                                 </Label>
                                                 <div className="relative group">
                                                     <InputWrapper icon={<User />} />
-                                                    <input id="last_name" name="last_name" value={data.last_name} onChange={e => setData('last_name', e.target.value)} required placeholder="Doe" className="w-full h-14 pl-12 pr-4 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" />
+                                                    <input id="last_name" name="last_name" value={data.last_name} onChange={e => setData('last_name', e.target.value)} required placeholder="e.g. Doe" className={`w-full h-14 pl-12 pr-10 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.last_name ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : data.last_name ? 'border-green-300 focus:border-green-500 focus:ring-green-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} />
+                                                    {data.last_name && !errors.last_name && (
+                                                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                            <CheckCircle className="w-5 h-5 text-green-500" />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <InputError message={errors.last_name} />
+                                                <InputError message={errors.last_name} className="absolute -bottom-5" />
                                             </motion.div>
                                         </div>
 
-                                        <motion.div className="space-y-2">
+                                        <motion.div className="space-y-2 relative pt-2">
                                             <Label htmlFor="phone" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                <Phone className="w-4 h-4 text-orange-500" /> Phone Number
+                                                Phone Number
                                             </Label>
                                             <div className="relative group">
                                                 <InputWrapper icon={<Phone />} />
-                                                <input id="phone" type="tel" name="phone" value={data.phone} onChange={e => setData('phone', e.target.value)} required placeholder="+218 9x xxx xxxx" className="w-full h-14 pl-12 pr-4 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" />
+                                                <input id="phone" type="tel" name="phone" value={data.phone} onChange={e => setData('phone', e.target.value)} required placeholder="+218 9x xxx xxxx" className={`w-full h-14 pl-12 pr-10 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.phone ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : data.phone ? 'border-green-300 focus:border-green-500 focus:ring-green-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} />
+                                                {data.phone && !errors.phone && (
+                                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <InputError message={errors.phone} />
+                                            <InputError message={errors.phone} className="absolute -bottom-5" />
                                         </motion.div>
 
-                                        <motion.div className="space-y-2">
+                                        <motion.div className="space-y-2 relative pt-2">
                                             <Label htmlFor="email" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                <Mail className="w-4 h-4 text-orange-500" /> Email Address
+                                                Email Address
                                             </Label>
                                             <div className="relative group">
                                                 <InputWrapper icon={<Mail />} />
-                                                <input id="email" type="email" name="email" value={data.email} onChange={e => setData('email', e.target.value)} required placeholder="name@example.com" className="w-full h-14 pl-12 pr-4 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" />
-                                            </div>
-                                            <InputError message={errors.email} />
-                                        </motion.div>
-
-                                        <motion.div className="space-y-2">
-                                            <Label htmlFor="password" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                <Lock className="w-4 h-4 text-orange-500" /> Password
-                                            </Label>
-                                            <div className="relative group">
-                                                <InputWrapper icon={<Lock />} />
-                                                <input id="password" type={showPassword ? "text" : "password"} name="password" value={data.password} className="w-full h-14 pl-12 pr-12 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" onChange={(e) => setData('password', e.target.value)} placeholder="••••••••" required />
-                                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 text-slate-400 hover:text-orange-600 transition-colors">
-                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                                </button>
-                                            </div>
-
-                                            {data.password && (
-                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1.5 pt-1">
-                                                    <div className="flex gap-1 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                        <motion.div
-                                                            className={`h-full ${getStrengthColor(calculatePasswordStrength(data.password))}`}
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${Math.max(10, calculatePasswordStrength(data.password))}%` }}
-                                                            transition={{ duration: 0.3 }}
-                                                        />
+                                                <input id="email" type="email" name="email" value={data.email} onChange={e => setData('email', e.target.value)} required placeholder="name@example.com" className={`w-full h-14 pl-12 pr-10 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : data.email ? 'border-green-300 focus:border-green-500 focus:ring-green-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} />
+                                                {data.email && !errors.email && (
+                                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                        <CheckCircle className="w-5 h-5 text-green-500" />
                                                     </div>
-                                                    <div className="flex justify-between items-center text-xs px-1">
-                                                        <span className="text-slate-500 font-medium">Password strength</span>
-                                                        <span className={`font-bold ${calculatePasswordStrength(data.password) <= 40 ? 'text-red-500' :
-                                                            calculatePasswordStrength(data.password) <= 60 ? 'text-yellow-600' :
-                                                                calculatePasswordStrength(data.password) <= 80 ? 'text-green-500' : 'text-green-600'
-                                                            }`}>
-                                                            {getStrengthText(calculatePasswordStrength(data.password))}
-                                                        </span>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-
-                                            <InputError message={errors.password} />
-                                        </motion.div>
-
-                                        <motion.div className="space-y-2">
-                                            <Label htmlFor="password_confirmation" className="text-slate-700 font-bold text-sm flex items-center gap-2">
-                                                <Shield className="w-4 h-4 text-orange-500" /> Confirm Password
-                                            </Label>
-                                            <div className="relative group">
-                                                <InputWrapper icon={<Lock />} />
-                                                <input id="password_confirmation" type={showConfirmPassword ? "text" : "password"} name="password_confirmation" value={data.password_confirmation} className="w-full h-14 pl-12 pr-12 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none" onChange={(e) => setData('password_confirmation', e.target.value)} placeholder="••••••••" required />
-                                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 text-slate-400 hover:text-orange-600 transition-colors">
-                                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                                </button>
+                                                )}
                                             </div>
-                                            <InputError message={errors.password_confirmation} />
+                                            <InputError message={errors.email} className="absolute -bottom-5" />
                                         </motion.div>
 
-                                        <motion.div whileHover={{ scale: 1.02 }} className="pt-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+                                            <motion.div className="space-y-2 relative">
+                                                <Label htmlFor="password" className="text-slate-700 font-bold text-sm flex items-center gap-2">
+                                                    Password
+                                                </Label>
+                                                <div className="relative group">
+                                                    <InputWrapper icon={<Lock />} />
+                                                    <input id="password" type={showPassword ? "text" : "password"} name="password" value={data.password} className={`w-full h-14 pl-12 pr-12 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} onChange={(e) => setData('password', e.target.value)} placeholder="••••••••" required />
+                                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 text-slate-400 hover:text-orange-600 transition-colors">
+                                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+
+                                                {data.password && (
+                                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1.5 absolute w-full -bottom-6">
+                                                        <div className="flex gap-1 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                className={`h-full ${getStrengthColor(calculatePasswordStrength(data.password))}`}
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.max(10, calculatePasswordStrength(data.password))}%` }}
+                                                                transition={{ duration: 0.3 }}
+                                                            />
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                                <InputError message={errors.password} className="absolute -bottom-5" />
+                                            </motion.div>
+
+                                            <motion.div className="space-y-2 relative">
+                                                <Label htmlFor="password_confirmation" className="text-slate-700 font-bold text-sm flex items-center gap-2">
+                                                    Confirm Password
+                                                </Label>
+                                                <div className="relative group">
+                                                    <InputWrapper icon={<Shield />} />
+                                                    <input id="password_confirmation" type={showConfirmPassword ? "text" : "password"} name="password_confirmation" value={data.password_confirmation} className={`w-full h-14 pl-12 pr-12 border-2 focus:ring-2 rounded-xl bg-slate-50/50 hover:bg-white focus:bg-white transition-all text-slate-900 placeholder:text-slate-400 font-medium shadow-sm hover:shadow-md outline-none ${errors.password_confirmation ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : (data.password_confirmation && data.password === data.password_confirmation) ? 'border-green-300 focus:border-green-500 focus:ring-green-200' : 'border-slate-200 focus:border-orange-500 focus:ring-orange-200'}`} onChange={(e) => setData('password_confirmation', e.target.value)} placeholder="••••••••" required />
+                                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center z-50 text-slate-400 hover:text-orange-600 transition-colors">
+                                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                                <InputError message={errors.password_confirmation} className="absolute -bottom-5" />
+                                            </motion.div>
+                                        </div>
+
+                                        <motion.div whileHover={{ scale: 1.02 }} className="pt-8">
                                             <Button type="button" onClick={handleNext} className="w-full h-14 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all text-lg flex items-center justify-center gap-2 group">
                                                 Continue <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                             </Button>
@@ -691,7 +716,7 @@ export default function Register() {
                                         <div className="space-y-4">
                                             <Button
                                                 type="button" variant="outline" onClick={detectLocation} disabled={isDetecting}
-                                                className={`w-full h-16 rounded-xl border-2 transition-all shadow-sm flex items-center justify-center gap-3 font-bold text-lg ${location ? 'border-green-500 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-600' : 'border-orange-200 text-orange-600 hover:border-orange-400 hover:bg-orange-50'}`}
+                                                className={`w-full h-16 rounded-xl border-2 transition-all shadow-sm flex items-center justify-center gap-3 font-bold text-lg bg-white ${location ? 'border-green-500 text-green-700 hover:bg-green-100 hover:border-green-600' : 'border-orange-200 text-orange-600 hover:border-orange-400 hover:bg-orange-50'}`}
                                             >
                                                 {isDetecting ? (
                                                     <><Loader2 className="w-6 h-6 animate-spin text-orange-500" /> Detecting Location...</>
@@ -703,7 +728,75 @@ export default function Register() {
                                             </Button>
 
                                             <div className="flex gap-3 pt-4">
-                                                <Button type="button" variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1 h-14 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:border-orange-300 hover:text-orange-600 transition-all">
+                                                <Button type="button" variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1 h-14 bg-white rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all">
+                                                    <ChevronLeft className="w-4 h-4 mr-2" /> Back
+                                                </Button>
+                                                <Button
+                                                    type="button" onClick={handleNext} disabled={isLoading}
+                                                    className="flex-[2] h-14 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all text-lg flex items-center justify-center gap-2"
+                                                >
+                                                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                                                    {location ? 'Continue' : 'Skip & Continue'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STEP 4: Profile Details */}
+                                {currentStep === 4 && (
+                                    <div className="space-y-6">
+                                        <div className="text-center mb-6">
+                                            <motion.div
+                                                className="w-20 h-20 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/30"
+                                                animate={{ scale: [1, 1.05, 1] }}
+                                                transition={{ duration: 2, repeat: Infinity }}
+                                            >
+                                                <UserCircle2 className="w-10 h-10 text-white" />
+                                            </motion.div>
+                                            <h2 className="text-2xl font-bold text-slate-900 mb-2">Set Up Your Profile (Optional)</h2>
+                                            <p className="text-slate-600 font-medium">Add a picture and birthday to complete your profile.</p>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-2 flex flex-col items-center">
+                                                <Label className="text-slate-700 font-bold text-sm">Profile Picture</Label>
+                                                <div className="relative group w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 hover:border-orange-200 transition-colors shadow-inner flex items-center justify-center bg-slate-50">
+                                                    {data.picture instanceof File ? (
+                                                        <img src={URL.createObjectURL(data.picture)} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <UserCircle2 className="w-16 h-16 text-slate-300" />
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                                        <label htmlFor="picture" className="text-white text-xs font-bold cursor-pointer absolute inset-0 flex items-center justify-center">
+                                                            {data.picture ? 'Change' : 'Upload'}
+                                                        </label>
+                                                        <input
+                                                            id="picture" type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden"
+                                                            onChange={(e) => setData('picture', e.target.files?.[0] || null)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {data.picture instanceof File && (
+                                                    <button type="button" onClick={() => setData('picture', null)} className="text-xs text-red-500 hover:text-red-700 font-bold mt-2">
+                                                        Remove Picture
+                                                    </button>
+                                                )}
+                                                <InputError message={errors.picture} />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="birthday" className="text-slate-700 font-bold text-sm">Birthday</Label>
+                                                <input
+                                                    type="date" id="birthday" value={data.birthday} onChange={(e) => setData('birthday', e.target.value)}
+                                                    max={new Date().toISOString().split('T')[0]}
+                                                    className="w-full h-14 px-4 border-2 border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 rounded-xl bg-white transition-all text-slate-900 font-medium shadow-sm outline-none cursor-text"
+                                                />
+                                                <InputError message={errors.birthday} />
+                                            </div>
+
+                                            <div className="flex gap-3 pt-4">
+                                                <Button type="button" variant="outline" onClick={handleBack} disabled={isLoading} className="flex-1 h-14 bg-white rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all">
                                                     <ChevronLeft className="w-4 h-4 mr-2" /> Back
                                                 </Button>
                                                 <Button
@@ -711,15 +804,15 @@ export default function Register() {
                                                     className="flex-[2] h-14 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all text-lg flex items-center justify-center gap-2"
                                                 >
                                                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                                                    {isLoading ? 'Creating Account...' : (location ? 'Create Account' : 'Skip & Create Account')}
+                                                    {isLoading ? 'Creating Account...' : (data.picture || data.birthday ? 'Create Account' : 'Skip & Create Account')}
                                                 </Button>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* STEP 4: Email Verification */}
-                                {currentStep === 4 && (
+                                {/* STEP 5: Email Verification */}
+                                {currentStep === 5 && (
                                     <div className="space-y-6">
                                         <div className="text-center mb-6">
                                             <motion.div
@@ -780,9 +873,9 @@ export default function Register() {
                         </AnimatePresence>
 
                         {/* Sign in link */}
-                        {currentStep < 4 && (
-                            <>
-                                <div className="relative mt-6 mb-4">
+                        {currentStep < 5 && (
+                            <div className="mt-6">
+                                <div className="relative mb-4">
                                     <div className="absolute inset-0 flex items-center">
                                         <div className="w-full border-t border-slate-200" />
                                     </div>
@@ -798,7 +891,7 @@ export default function Register() {
                                         </span>
                                     </Link>
                                 </motion.div>
-                            </>
+                            </div>
                         )}
                     </motion.div>
                 </motion.div>

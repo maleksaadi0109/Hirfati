@@ -9,7 +9,10 @@ use App\Traits\ApiResponses;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Mail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Mail\Provider\RejectedMail;
+use App\Mail\Provider\ApproveMail;
 
 class CraftsmanApprovalController extends Controller
 {
@@ -57,6 +60,7 @@ class CraftsmanApprovalController extends Controller
         }
 
         $provider->update(['application_status' => 'approved']);
+        Mail::to($provider->user->email)->send(new ApproveMail($provider->user));
 
         return $this->ok('Provider has been approved successfully.');
     }
@@ -73,6 +77,7 @@ class CraftsmanApprovalController extends Controller
         }
 
         $provider->update(['application_status' => 'rejected']);
+        Mail::to($provider->user->email)->send(new RejectedMail($provider->user));
 
         return $this->ok('Provider has been rejected.');
     }

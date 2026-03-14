@@ -14,24 +14,25 @@ Route::get('/onboarding', function () {
 
 Route::get('/rejected-approval', function () {
     return Inertia::render('auth/rejected-approval');
-})->name('rejected-approval');
+})->middleware(['rejected_provider'])->name('rejected-approval');
+ Route::get('/client/dashboard', function () {
+        return Inertia::render('client/Dashboard');
+})->name('client.dashboard');
+  
 
-Route::middleware([])->group(function () {
+
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function (Request $request) {
         return match ($request->user()?->role) {
             'provider' => redirect()->route('worker.dashboard'),
+            'admin' => redirect()->route('admin.craftsmen'),
             default => redirect()->route('client.dashboard'),
         };
     })->name('dashboard');
 
-    Route::get('/client/dashboard', function () {
-        return Inertia::render('client/Dashboard');
-    })->name('client.dashboard');
+  
 
-    Route::get('/client/messages', function () {
-        return Inertia::render('client/Messages');
-    })->name('client.messages');
-
+ 
     Route::get('/worker/dashboard', function () {
         return Inertia::render('worker/Dashboard');
     })->name('worker.dashboard');
@@ -39,8 +40,38 @@ Route::middleware([])->group(function () {
     Route::get('/worker/messages', function () {
         return Inertia::render('worker/Messages');
     })->name('worker.messages');
-   
-  
+    
+    Route::get('/pending-approval',function(){
+        return Inertia::render('auth/pending-approval');
+    })->middleware(['pending_provider'])->name('pending-approval');
+
+   Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/admin/craftsmen', function () {
+        return Inertia::render('admin/craftsmen');
+    })->name('admin.craftsmen');
+
+    // Second Route
+    Route::get('/admin/craftsmen/{provider}', function () {
+        return Inertia::render('admin/craftsman-detail');
+    })->name('admin.craftsman-detail');
+
 });
+     
+});
+
+// ─── Web Logout (session-based, no CSRF issues) ─────────────────────
+Route::post('/web-logout', function (Request $request) {
+    // Delete all Sanctum tokens for this user
+    if ($user = $request->user()) {
+        $user->tokens()->delete();
+    }
+
+    // Destroy the web session
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/login');
+})->middleware('auth')->name('web.logout');
 
 require __DIR__.'/settings.php';

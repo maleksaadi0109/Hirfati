@@ -16,23 +16,44 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api')
                 ->group(base_path('routes/Auth/api_auth.php'));
 
             \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api')
                 ->group(base_path('routes/Admin/api_admin.php'));
+
+            \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/Provider/api_provider.php'));
+             \Illuminate\Support\Facades\Route::middleware('web')
+             ->group(base_path('routes/Customer/Customer_web.php'));
+
+             \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/Customer/api_customer.php'));
+
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->statefulApi();
+
         $middleware->web(append: [
             HandleAppearance::class,
-            HandleInertiaRequests::class,
+            HandleInertiaRequests::class, 
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+            'rejected_provider'=> \App\Http\Middleware\Provider\EnsureProviderRejected::class,
+            'pending_provider'=> \App\Http\Middleware\Provider\EnsureProviderPending::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->respond(function (Response $response, Throwable $exception, $request) {
+        $exceptions->respond(function (Response $response, Throwable $exceptpion, $request) {
             // Handle error responses with Inertia error page for non-JSON requests
             if (! $request->expectsJson() && in_array($response->getStatusCode(), [500, 503, 404, 403, 401, 419, 422, 429])) {
                 return Inertia::render('Error', ['status' => $response->getStatusCode()])

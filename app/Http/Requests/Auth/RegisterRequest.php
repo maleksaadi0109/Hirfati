@@ -51,6 +51,8 @@ class RegisterRequest extends FormRequest
             'category' => ['nullable', 'string', 'max:255'],
             'experience' => ['nullable', 'integer', 'min:0'],
             'id_document' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'picture' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'birthday' => ['nullable', 'date', 'before:today'],
         ];
     }   
 

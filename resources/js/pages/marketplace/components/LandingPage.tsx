@@ -1,1096 +1,1122 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Wrench, GraduationCap, Home, Zap, Hammer, Paintbrush, ChevronDown, Star, MapPin, ArrowRight, Shield, Clock, Heart, CheckCircle, Award, Users, TrendingUp, Sparkles } from 'lucide-react';
-import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import useEmblaCarousel from 'embla-carousel-react';
+import { motion, useScroll, useTransform, type Variants } from 'framer-motion';
+import {
+    ArrowRight,
+    Award,
+    CheckCircle,
+    Clock,
+    GraduationCap,
+    Hammer,
+    Heart,
+    Home,
+    MapPin,
+    Paintbrush,
+    Search,
+    Shield,
+    Sparkles,
+    Star,
+    Users,
+    Wrench,
+    Zap,
+} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface LandingPageProps {
-  onSearch: (query: string, category: string) => void;
-  onNavigate: (page: string) => void;
+    onSearch: (query: string, category: string) => void;
+    onNavigate: (page: string) => void;
 }
 
-// 3D Floating Shapes Component
-const FloatingShapes = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* Animated gradient orbs */}
-      <motion.div
-        animate={{
-          x: [0, 100, 0],
-          y: [0, -100, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ willChange: 'transform' }}
-        className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-br from-orange-400/30 to-pink-400/30 rounded-full blur-2xl"
-      />
-      <motion.div
-        animate={{
-          x: [0, -150, 0],
-          y: [0, 100, 0],
-          scale: [1, 1.3, 1],
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ willChange: 'transform' }}
-        className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-2xl"
-      />
-      <motion.div
-        animate={{
-          x: [0, 80, 0],
-          y: [0, -80, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 18,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ willChange: 'transform' }}
-        className="absolute bottom-20 left-1/3 w-64 h-64 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-2xl"
-      />
-
-      {/* Floating geometric shapes */}
-      {[...Array(6)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            willChange: 'transform' // Performance optimization
-          }}
-          animate={{
-            y: [0, -30, 0],
-            rotate: [0, 360],
-            opacity: [0.1, 0.3, 0.1],
-          }}
-          transition={{
-            duration: 10 + Math.random() * 10,
-            repeat: Infinity,
-            delay: Math.random() * 5,
-            ease: "easeInOut"
-          }}
-        >
-          <div
-            className={`w-${2 + Math.floor(Math.random() * 4)} h-${2 + Math.floor(Math.random() * 4)} ${i % 3 === 0 ? 'bg-orange-400/20' : i % 3 === 1 ? 'bg-blue-400/20' : 'bg-purple-400/20'
-              } ${i % 2 === 0 ? 'rounded-full' : 'rounded-lg rotate-45'}`}
-            style={{
-              width: `${20 + Math.random() * 40}px`,
-              height: `${20 + Math.random() * 40}px`,
-            }}
-          />
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
-// Parallax Section Component
-const ParallaxSection = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
-
-  return (
-    <motion.div ref={ref} style={{ y }} className={className}>
-      {children}
-    </motion.div>
-  );
-};
-
 const categories = [
-  { id: 'all', name: 'All Categories', icon: Search },
-  { id: 'maintenance', name: 'Maintenance', icon: Wrench },
-  { id: 'education', name: 'Education', icon: GraduationCap },
-  { id: 'construction', name: 'Construction', icon: Hammer },
-  { id: 'electrical', name: 'Electrical', icon: Zap },
-  { id: 'painting', name: 'Painting', icon: Paintbrush },
-  { id: 'home-services', name: 'Home Services', icon: Home },
-  { id: 'moving', name: 'Moving', icon: ArrowRight },
+    { id: 'all', name: 'All Categories', icon: Search },
+    { id: 'maintenance', name: 'Maintenance', icon: Wrench },
+    { id: 'education', name: 'Education', icon: GraduationCap },
+    { id: 'construction', name: 'Construction', icon: Hammer },
+    { id: 'electrical', name: 'Electrical', icon: Zap },
+    { id: 'painting', name: 'Painting', icon: Paintbrush },
+    { id: 'home-services', name: 'Home Services', icon: Home },
+    { id: 'moving', name: 'Moving', icon: ArrowRight },
 ];
 
 const featuredServices = [
-  {
-    id: 1,
-    name: 'Ahmed Hassan',
-    service: 'Professional Electrician',
-    rating: 4.9,
-    reviews: 128,
-    image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    price: 'From 50 LYD',
-    location: 'Tripoli',
-    verified: true,
-  },
-  {
-    id: 2,
-    name: 'Sarah Khaled',
-    service: 'English Tutor',
-    rating: 5.0,
-    reviews: 85,
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    price: 'From 40 LYD/hr',
-    location: 'Benghazi',
-    verified: true,
-  },
-  {
-    id: 3,
-    name: 'Mohamed Ali',
-    service: 'Plumbing Expert',
-    rating: 4.8,
-    reviews: 210,
-    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    price: 'From 60 LYD',
-    location: 'Misrata',
-    verified: true,
-  },
-  {
-    id: 4,
-    name: 'Layla Mahmoud',
-    service: 'Interior Designer',
-    rating: 4.9,
-    reviews: 94,
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    price: 'Custom Quote',
-    location: 'Tripoli',
-    verified: true,
-  },
+    {
+        id: 1,
+        name: 'Ahmed Hassan',
+        service: 'Professional Electrician',
+        rating: 4.9,
+        reviews: 128,
+        image: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+        price: 'From 50 LYD',
+        location: 'Tripoli',
+        verified: true,
+    },
+    {
+        id: 2,
+        name: 'Sarah Khaled',
+        service: 'English Tutor',
+        rating: 5.0,
+        reviews: 85,
+        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+        price: 'From 40 LYD/hr',
+        location: 'Benghazi',
+        verified: true,
+    },
+    {
+        id: 3,
+        name: 'Mohamed Ali',
+        service: 'Plumbing Expert',
+        rating: 4.8,
+        reviews: 210,
+        image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+        price: 'From 60 LYD',
+        location: 'Misrata',
+        verified: true,
+    },
+    {
+        id: 4,
+        name: 'Layla Mahmoud',
+        service: 'Interior Designer',
+        rating: 4.9,
+        reviews: 94,
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+        price: 'Custom Quote',
+        location: 'Tripoli',
+        verified: true,
+    },
 ];
 
 const stats = [
-  { icon: Users, value: '1M+', label: 'Active Users' },
-  { icon: CheckCircle, value: '5M+', label: 'Tasks Completed' },
-  { icon: Star, value: '4.9/5', label: 'Average Rating' },
-  { icon: Award, value: '50K+', label: 'Verified Taskers' },
+    { icon: Users, value: '1M+', label: 'Active Users' },
+    { icon: CheckCircle, value: '5M+', label: 'Tasks Completed' },
+    { icon: Star, value: '4.9/5', label: 'Average Rating' },
+    { icon: Award, value: '50K+', label: 'Verified Taskers' },
 ];
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+const valueProps = [
+    {
+        icon: Shield,
+        title: 'Choose your Tasker',
+        desc: 'Browse trusted Taskers by skills, reviews, and price. All profiles verified.',
+        color: 'from-orange-500/15 to-orange-100',
+        iconWrap: 'bg-orange-100 text-orange-600',
+    },
+    {
+        icon: Clock,
+        title: 'Schedule it',
+        desc: 'Get your project done as soon as tomorrow. Flexible timing that works for you.',
+        color: 'from-rose-500/15 to-rose-100',
+        iconWrap: 'bg-rose-100 text-rose-600',
+    },
+    {
+        icon: CheckCircle,
+        title: 'Pay securely',
+        desc: 'Pay directly through the حرفتي platform only when served. Your money is protected.',
+        color: 'from-amber-500/15 to-amber-100',
+        iconWrap: 'bg-amber-100 text-amber-600',
+    },
+];
+
+const fadeInUp: Variants = {
+    hidden: { opacity: 0, y: 28 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.65 },
+    },
 };
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1
-    }
-  }
+const staggerContainer: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.08,
+        },
+    },
 };
 
-const scaleIn = {
-  hidden: { scale: 0.9, opacity: 0 },
-  visible: { scale: 1, opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+const MeshGradient = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden opacity-80">
+            <motion.div
+                animate={{
+                    x: [0, 60, -30, 0],
+                    y: [0, -40, 50, 0],
+                    scale: [1, 1.08, 0.95, 1],
+                }}
+                transition={{ duration: 20, repeat: Infinity }}
+                className="absolute -top-40 -left-32 h-[28rem] w-[28rem] rounded-full bg-orange-300/35 blur-[110px]"
+            />
+            <motion.div
+                animate={{
+                    x: [0, -70, 45, 0],
+                    y: [0, 60, -30, 0],
+                    scale: [1, 1.14, 0.92, 1],
+                }}
+                transition={{ duration: 24, repeat: Infinity }}
+                className="absolute top-10 right-0 h-[32rem] w-[32rem] rounded-full bg-amber-200/30 blur-[120px]"
+            />
+            <motion.div
+                animate={{
+                    x: [0, 35, -45, 0],
+                    y: [0, 30, -40, 0],
+                    scale: [1, 0.95, 1.08, 1],
+                }}
+                transition={{ duration: 18, repeat: Infinity }}
+                className="absolute bottom-0 left-1/3 h-[34rem] w-[34rem] rounded-full bg-rose-200/20 blur-[120px]"
+            />
+        </div>
+    );
+};
+
+const ParallaxSection = ({
+    children,
+    className = '',
+}: {
+    children: React.ReactNode;
+    className?: string;
+}) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: ref,
+        offset: ['start end', 'end start'],
+    });
+
+    const y = useTransform(scrollYProgress, [0, 1], [64, -64]);
+
+    return (
+        <motion.div ref={ref} style={{ y }} className={className}>
+            {children}
+        </motion.div>
+    );
 };
 
 export function LandingPage({ onSearch, onNavigate }: LandingPageProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [scrolled, setScrolled] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.scrollY > 20;
-    }
-    return false;
-  });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [scrolled, setScrolled] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.scrollY > 20;
+        }
+        return false;
+    });
 
-  const [emblaRef] = useEmblaCarousel({ loop: true, align: 'start' }, [Autoplay({ delay: 5000 })]);
+    const [emblaRef] = useEmblaCarousel({ loop: true, align: 'start' }, [
+        Autoplay({ delay: 5000 }),
+    ]);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(searchQuery, 'all');
-  };
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSearch(searchQuery, 'all');
+    };
 
-  const handleCategoryClick = (categoryId: string) => {
-    onSearch('', categoryId);
-  };
+    const handleCategoryClick = (categoryId: string) => {
+        onSearch('', categoryId);
+    };
 
-  return (
-    <div className="flex flex-col bg-slate-50 font-sans selection:bg-orange-200" style={{ flex: '1 0 auto' }}>
-      {/* Enhanced Navbar with optimized blur effect */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-        ? 'bg-white/95 backdrop-blur-sm shadow-lg shadow-slate-900/5 py-3'
-        : 'bg-white/60 backdrop-blur-md py-4'
-        }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="relative">
-              <motion.div
-                animate={{
-                  boxShadow: scrolled
-                    ? '0 0 0 0px rgba(249, 115, 22, 0)'
-                    : '0 0 0 4px rgba(249, 115, 22, 0.1)'
-                }}
-                transition={{ duration: 0.3 }}
-                className="w-12 h-12 rounded-xl overflow-hidden border-2 border-orange-500/20"
-              >
-                <img
-                  src="/images/hirfati-logo.jpg"
-                  alt="حرفتي Logo"
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            </div>
-            <div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent tracking-tight">
-                Hirfati
-              </span>
-              <div className="text-[10px] text-orange-600 font-semibold -mt-1">حرفتي</div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <a
-              href="/login"
-              className="text-slate-600 font-semibold hover:text-orange-600 px-4 py-2 rounded-full transition-all duration-300 hidden sm:block hover:bg-orange-50"
+    return (
+        <div
+            className="flex flex-col bg-slate-50 selection:bg-orange-200 selection:text-slate-900"
+            style={{ flex: '1 0 auto' }}
+        >
+            <nav
+                className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+                    scrolled
+                        ? 'border-b border-slate-200/70 bg-white/82 py-3 shadow-[0_16px_40px_-28px_rgba(15,23,42,0.28)] backdrop-blur-2xl'
+                        : 'bg-transparent py-5'
+                }`}
             >
-              Sign In
-            </a>
-            <a
-              href="/login"
-              className="relative px-6 py-2.5 rounded-full font-bold transition-all duration-300 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 active:scale-95 overflow-hidden group"
-            >
-              <span className="relative z-10">Become a Tasker</span>
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-700"
-                initial={{ x: '100%' }}
-                whileHover={{ x: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </a>
-          </motion.div>
-        </div>
-      </nav>
-
-      {/* Enhanced Hero Section with 3D effects */}
-      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-orange-50/30">
-        {/* 3D Background */}
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-70">
-          <FloatingShapes />
-        </div>
-
-        {/* Animated grid */}
-        <div className="absolute inset-0 z-0 opacity-[0.02]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)',
-            backgroundSize: '40px 40px'
-          }} />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={staggerContainer}
-              className="max-w-2xl"
-            >
-              {/* Trending badge */}
-              <motion.div
-                variants={fadeInUp}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-100 to-pink-100 rounded-full mb-6 border border-orange-200/50 shadow-sm"
-              >
-                <Sparkles className="w-4 h-4 text-orange-600" />
-                <span className="text-sm font-semibold text-orange-900">Trusted by 1M+ Libyans</span>
-                <TrendingUp className="w-4 h-4 text-orange-600" />
-              </motion.div>
-
-              <motion.h1
-                variants={fadeInUp}
-                className="text-6xl sm:text-8xl font-extrabold text-slate-900 mb-8 leading-[1.05] tracking-tight"
-              >
-                Get help. <br />
-                <span className="bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
-                  Gain happiness.
-                </span>
-              </motion.h1>
-
-              <motion.p
-                variants={fadeInUp}
-                className="text-xl sm:text-2xl text-slate-600 mb-12 font-medium max-w-lg leading-relaxed"
-              >
-                Connect with trusted local experts for home repairs, errands, and more.
-                <span className="text-slate-900 font-bold decoration-orange-400/30 underline decoration-4 underline-offset-4"> Your time matters.</span>
-              </motion.p>
-
-              {/* Enhanced Search Bar with Glassmorphism */}
-              <motion.form
-                variants={scaleIn}
-                onSubmit={handleSearch}
-                className="relative max-w-xl group"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="relative flex items-center p-3 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-orange-900/10 border border-white/50 focus-within:border-orange-400/50 focus-within:ring-4 focus-within:ring-orange-100 transition-all duration-300"
-                >
-                  <div className="pl-4 pr-3 text-slate-400 group-focus-within:text-orange-500 transition-colors">
-                    <Search className="w-7 h-7" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="What do you need help with?"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xl text-slate-900 placeholder-slate-400 h-14 px-2 font-medium"
-                  />
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-8 py-4 bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-2xl font-bold text-base shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all"
-                  >
-                    <a href='/login'>
-                      Get Help
-                    </a>
-                  </motion.button>
-                </motion.div>
-
-                {/* Popular Pills */}
-                <motion.div
-                  variants={fadeInUp}
-                  className="mt-6 flex flex-wrap items-center gap-3 text-sm font-medium pl-2"
-                >
-                  <span className="text-slate-500 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    Popular:
-                  </span>
-                  {['Cleaning', 'Mounting', 'Moving', 'Repairs'].map(tag => (
-                    <motion.button
-                      key={tag}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      type="button"
-                      onClick={() => setSearchQuery(tag)}
-                      className="relative px-4 py-2 rounded-full bg-gradient-to-r from-white to-slate-50 border border-slate-200 text-slate-700 hover:border-orange-300 hover:text-orange-600 hover:shadow-md transition-all overflow-hidden group"
-                    >
-                      <span className="relative z-10">{tag}</span>
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-orange-50 to-pink-50"
-                        initial={{ x: '-100%' }}
-                        whileHover={{ x: 0 }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </motion.button>
-                  ))}
-                </motion.div>
-              </motion.form>
-
-              {/* Stats */}
-              <motion.div
-                variants={fadeInUp}
-                className="mt-12 grid grid-cols-3 gap-6"
-              >
-                {stats.slice(0, 3).map((stat, idx) => {
-                  const Icon = stat.icon;
-                  return (
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                     <motion.div
-                      key={idx}
-                      whileHover={{ y: -5 }}
-                      className="text-center"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-3"
                     >
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Icon className="w-4 h-4 text-orange-600" />
-                        <div className="font-bold text-slate-900">{stat.value}</div>
-                      </div>
-                      <div className="text-xs text-slate-500">{stat.label}</div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            </motion.div>
-
-            {/* Right Image with 3D perspective */}
-            <motion.div
-              initial={{ opacity: 0, x: 50, rotateY: 15 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="relative lg:h-[600px] hidden lg:block"
-              style={{ perspective: '1000px' }}
-            >
-              <motion.div
-                className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white hover:scale-[1.02] transition-all duration-700"
-                whileHover={{
-                  rotateY: -5,
-                  rotateX: 5,
-                  z: 50
-                }}
-                style={{
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                <img
-                  src="/images/hero-handyman.jpg"
-                  alt="Professional handyman at work"
-                  className="w-full h-full object-cover"
-                />
-
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
-
-                {/* Floating trust badge */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0, scale: 0.9 }}
-                  animate={{ y: 0, opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="absolute bottom-8 left-8 right-8 bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-white/20"
-                >
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="flex -space-x-3">
-                      {featuredServices.slice(0, 3).map((service, i) => (
-                        <motion.img
-                          key={i}
-                          src={service.image}
-                          alt=""
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.7 + i * 0.1 }}
-                          className="w-10 h-10 rounded-full border-3 border-white shadow-lg object-cover"
-                        />
-                      ))}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <div className="font-bold text-slate-900">Trusted by 1M+</div>
-                        <Shield className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        <Star className="w-3 h-3 fill-current" />
-                        <Star className="w-3 h-3 fill-current" />
-                        <Star className="w-3 h-3 fill-current" />
-                        <Star className="w-3 h-3 fill-current" />
-                        <Star className="w-3 h-3 fill-current" />
-                        <span className="text-xs text-slate-600 ml-1">4.9/5</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    "Verified reviews from real neighbors across Libya."
-                  </p>
-                </motion.div>
-
-                {/* Floating particles */}
-                {[...Array(5)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 bg-orange-400/40 rounded-full"
-                    style={{
-                      left: `${20 + i * 15}%`,
-                      top: `${30 + i * 10}%`,
-                    }}
-                    animate={{
-                      y: [0, -20, 0],
-                      opacity: [0.2, 0.5, 0.2],
-                    }}
-                    transition={{
-                      duration: 3 + i,
-                      repeat: Infinity,
-                      delay: i * 0.5,
-                    }}
-                  />
-                ))}
-              </motion.div>
-
-              {/* 3D shadow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-blue-500/10 rounded-3xl blur-3xl -z-10 translate-y-8" />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Grid with 3D cards */}
-      <section className="py-24 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
-        {/* Decorative background */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-              Popular projects in <span className="text-orange-600">your area</span>
-            </h2>
-            <p className="text-slate-600 text-lg">Choose from thousands of skilled professionals</p>
-          </motion.div>
-
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {categories.map((category, idx) => {
-              const Icon = category.icon;
-              return (
-                <motion.button
-                  key={category.id}
-                  variants={fadeInUp}
-                  whileHover={{
-                    y: -5,
-                    scale: 1.02,
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className="group relative flex flex-col items-center justify-center p-8 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-orange-200 hover:shadow-md transition-all duration-300 h-48 overflow-hidden"
-                >
-                  <div className="relative z-10 flex flex-col items-center gap-4">
-                    {/* Icon Container */}
-                    <div className="w-16 h-16 rounded-full bg-orange-50 group-hover:bg-orange-100 flex items-center justify-center transition-colors duration-300">
-                      <Icon className="w-8 h-8 text-orange-600 transition-transform duration-300 group-hover:scale-110" />
-                    </div>
-
-                    {/* Category Name */}
-                    <span className="text-lg font-semibold text-slate-700 group-hover:text-slate-900 transition-colors duration-300">
-                      {category.name}
-                    </span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Value Proposition with parallax */}
-      <section id="how-it-works" className="py-32 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
-        {/* Animated background elements */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-orange-300/20 to-pink-300/20 rounded-full blur-3xl"
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full mb-6"
-            >
-              <Zap className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-900">Simple & Fast</span>
-            </motion.div>
-            <h2 className="text-5xl font-bold text-slate-900 mb-4">
-              Everyday life made <span className="text-orange-600">easier</span>
-            </h2>
-            <p className="text-slate-600 text-xl max-w-2xl mx-auto">
-              Three simple steps to get your tasks done by verified professionals
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "Choose your Tasker",
-                desc: "Browse trusted Taskers by skills, reviews, and price. All profiles verified.",
-                color: "from-blue-500 to-cyan-500"
-              },
-              {
-                icon: Clock,
-                title: "Schedule it",
-                desc: "Get your project done as soon as tomorrow. Flexible timing that works for you.",
-                color: "from-purple-500 to-pink-500"
-              },
-              {
-                icon: CheckCircle,
-                title: "Pay securely",
-                desc: "Pay directly through the حرفتي platform only when served. Your money is protected.",
-                color: "from-orange-500 to-red-500"
-              }
-            ].map((item, idx) => (
-              <ParallaxSection key={idx}>
-                <motion.div
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeInUp}
-                  whileHover={{
-                    y: -10,
-                    scale: 1.02,
-                    rotateY: 5
-                  }}
-                  className="relative group h-full"
-                  style={{
-                    transformStyle: 'preserve-3d',
-                  }}
-                >
-                  <div className="relative bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-orange-200/30 transition-all duration-500 border border-slate-100 overflow-hidden h-full">
-                    {/* Number badge */}
-                    <div className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-400 group-hover:bg-orange-100 group-hover:text-orange-600 transition-all">
-                      {idx + 1}
-                    </div>
-
-                    {/* Icon with gradient */}
-                    <motion.div
-                      whileHover={{ rotateY: 360 }}
-                      transition={{ duration: 0.8 }}
-                      className={`w-16 h-16 mb-6 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg`}
-                      style={{
-                        transformStyle: 'preserve-3d',
-                      }}
-                    >
-                      <item.icon className="w-8 h-8 text-white" />
+                        <div className="relative">
+                            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-orange-400/30 via-orange-200/10 to-transparent blur-md" />
+                            <motion.div
+                                animate={{
+                                    boxShadow: scrolled
+                                        ? '0 10px 26px -18px rgba(249,115,22,0.35)'
+                                        : '0 20px 34px -20px rgba(249,115,22,0.5)',
+                                }}
+                                transition={{ duration: 0.3 }}
+                                className="relative h-12 w-12 overflow-hidden rounded-2xl border border-orange-200/70 bg-white shadow-lg"
+                            >
+                                <img
+                                    src="/images/hirfati-logo.jpg"
+                                    alt="حرفتي Logo"
+                                    className="h-full w-full object-cover"
+                                />
+                            </motion.div>
+                        </div>
+                        <div>
+                            <span className="bg-gradient-to-r from-slate-950 via-slate-800 to-slate-700 bg-clip-text text-2xl font-black tracking-tight text-transparent">
+                                Hirfati
+                            </span>
+                            <div className="-mt-1 text-[10px] font-bold tracking-[0.24em] text-orange-600 uppercase">
+                                حرفتي
+                            </div>
+                        </div>
                     </motion.div>
 
-                    <h3 className="text-2xl font-bold text-slate-900 mb-4">{item.title}</h3>
-                    <p className="text-slate-600 leading-relaxed font-medium">{item.desc}</p>
-
-                    {/* Hover gradient overlay */}
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                      initial={{ scale: 0 }}
-                      whileHover={{ scale: 1 }}
-                    />
-
-                    {/* Bottom accent */}
-                    <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${item.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500`} />
-                  </div>
-                </motion.div>
-              </ParallaxSection>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Taskers with 3D carousel */}
-      <section className="py-32 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-16 gap-4">
-            <div>
-              <motion.div
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 rounded-full mb-4"
-              >
-                <Award className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-semibold text-purple-900">Top Performers</span>
-              </motion.div>
-              <h2 className="text-4xl sm:text-5xl font-bold text-slate-900">
-                Top Rated <span className="text-orange-600">Taskers</span>
-              </h2>
-              <p className="text-slate-600 mt-2">Verified professionals you can trust</p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05, x: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-full font-bold hover:bg-orange-700 transition-all shadow-lg hover:shadow-xl"
-            >
-              See all
-              <ArrowRight className="w-4 h-4" />
-            </motion.button>
-          </div>
-
-          <div className="overflow-hidden p-4 -m-4" ref={emblaRef}>
-            <div className="flex gap-6">
-              {featuredServices.map((service, idx) => (
-                <div key={service.id} className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_25%] min-w-0">
-                  <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    whileHover={{
-                      y: -15,
-                      rotateY: 5,
-                      scale: 1.02
-                    }}
-                    className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-2xl hover:shadow-orange-200/30 transition-all cursor-pointer h-full flex flex-col group relative overflow-hidden"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                    }}
-                  >
-                    {/* Verified badge */}
-                    {service.verified && (
-                      <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        whileInView={{ scale: 1, rotate: 0 }}
-                        transition={{ delay: 0.3 + idx * 0.1 }}
-                        className="absolute top-4 right-4 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg z-10"
-                      >
-                        <CheckCircle className="w-5 h-5 text-white" />
-                      </motion.div>
-                    )}
-
-                    {/* Profile section */}
-                    <div className="flex items-start gap-4 mb-6">
-                      <div className="relative">
-                        <motion.div
-                          whileHover={{ scale: 1.1, rotateZ: 5 }}
-                          className="w-16 h-16 rounded-2xl overflow-hidden border-3 border-orange-200 shadow-lg"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-2 sm:gap-3"
+                    >
+                        <a
+                            href="/login"
+                            className="hidden rounded-full border border-transparent px-4 py-2 text-sm font-semibold text-slate-600 transition-all duration-300 hover:border-orange-100 hover:bg-orange-50/80 hover:text-orange-600 sm:block"
                         >
-                          <img
-                            src={service.image}
-                            alt={service.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </motion.div>
-                        {/* Online indicator */}
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-3 border-white shadow-md" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors mb-1">
-                          {service.name}
-                        </h4>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center text-yellow-500 text-sm font-bold">
-                            <Star className="w-4 h-4 fill-current" />
-                            <span className="ml-1">{service.rating}</span>
-                          </div>
-                          <span className="text-slate-400 text-sm">({service.reviews})</span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
-                          <MapPin className="w-3 h-3" />
-                          {service.location}
-                        </div>
-                      </div>
-                    </div>
+                            Sign In
+                        </a>
+                        <a
+                            href="/login"
+                            className="group relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 via-orange-500 to-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-[0_18px_30px_-16px_rgba(234,88,12,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_40px_-16px_rgba(234,88,12,0.9)] sm:px-6"
+                        >
+                            <span className="relative z-10">
+                                Become a Tasker
+                            </span>
+                            <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-700"
+                                initial={{ x: '100%' }}
+                                whileHover={{ x: 0 }}
+                                transition={{ duration: 0.28 }}
+                            />
+                        </a>
+                    </motion.div>
+                </div>
+            </nav>
 
-                    {/* Service info */}
-                    <div className="mb-6 flex-1">
-                      <h5 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-orange-600" />
-                        {service.service}
-                      </h5>
-                      <p className="text-sm text-slate-500 italic line-clamp-2">
-                        "Professional, punctual, and did a fantastic job. Highly recommend!"
-                      </p>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                      <span className="font-bold text-slate-900 text-lg">{service.price}</span>
-                      <motion.span
-                        whileHover={{ x: 5 }}
-                        className="text-orange-600 text-sm font-bold group-hover:underline flex items-center gap-1"
-                      >
-                        View Profile
-                        <ArrowRight className="w-4 h-4" />
-                      </motion.span>
-                    </div>
-
-                    {/* Hover gradient effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-br from-orange-50/0 to-pink-50/0 group-hover:from-orange-50/50 group-hover:to-pink-50/30 transition-all duration-500 pointer-events-none"
-                      initial={{ opacity: 0 }}
-                      whileHover={{ opacity: 1 }}
+            <section className="relative overflow-hidden bg-[#faf8f5] pt-28 pb-16 sm:pt-36 sm:pb-24 lg:pt-40 lg:pb-28">
+                <div className="pointer-events-none absolute inset-0">
+                    <MeshGradient />
+                </div>
+                <div className="absolute inset-0 opacity-[0.03]">
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            backgroundImage:
+                                'linear-gradient(to right, #0f172a 1px, transparent 1px), linear-gradient(to bottom, #0f172a 1px, transparent 1px)',
+                            backgroundSize: '42px 42px',
+                        }}
                     />
-                  </motion.div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-slate-50" />
 
-      {/* Bottom CTA with 3D effect */}
-      <section className="py-32 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-        {/* Animated background */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-orange-600/20 to-pink-600/20 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            rotate: [0, -90, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-full blur-3xl"
-        />
+                <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={staggerContainer}
+                            className="max-w-2xl"
+                        >
+                            <motion.div
+                                variants={fadeInUp}
+                                className="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-white/75 px-4 py-2 text-sm font-semibold text-slate-800 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.25)] backdrop-blur-xl sm:mb-8"
+                            >
+                                <Sparkles className="h-4 w-4 text-orange-500" />
+                                Trusted by 1M+ Libyans for everyday help
+                            </motion.div>
 
-        <div className="max-w-4xl mx-auto px-4 text-center relative z-20">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            whileInView={{ scale: 1, rotate: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full mb-8 border border-white/20"
-          >
-            <Heart className="w-5 h-5 text-pink-400 fill-current" />
-            <span className="text-white font-semibold">Join our community</span>
-          </motion.div>
+                            <motion.h1
+                                variants={fadeInUp}
+                                className="max-w-xl text-5xl leading-[0.98] font-black tracking-tight text-slate-950 sm:text-6xl lg:text-7xl xl:text-[5.35rem]"
+                            >
+                                Get help.
+                                <br />
+                                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">
+                                    Gain happiness.
+                                </span>
+                            </motion.h1>
 
-          <motion.h2
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-5xl sm:text-6xl font-bold text-white mb-6 leading-tight"
-          >
-            Don't just dream it. <br />
-            <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              Task it.
-            </span>
-          </motion.h2>
+                            <motion.p
+                                variants={fadeInUp}
+                                className="mt-6 max-w-xl text-base leading-8 font-medium text-slate-600 sm:mt-8 sm:text-lg lg:text-xl"
+                            >
+                                Connect with trusted local experts for home
+                                repairs, errands, learning, and everyday tasks.{' '}
+                                <span className="font-semibold text-slate-900">
+                                    Fast, polished, and reliable.
+                                </span>
+                            </motion.p>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed"
-          >
-            Join the community of people getting things done. From small errands to big projects.
-            <span className="text-orange-400 font-semibold"> Start today.</span>
-          </motion.p>
+                            <motion.form
+                                variants={fadeInUp}
+                                onSubmit={handleSearch}
+                                className="mt-8 max-w-2xl sm:mt-10"
+                            >
+                                <div className="rounded-[2rem] border border-white/70 bg-white/80 p-2.5 shadow-[0_30px_70px_-28px_rgba(234,88,12,0.35)] ring-1 ring-orange-100/70 backdrop-blur-2xl">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <div className="flex min-w-0 flex-1 items-center gap-3 rounded-[1.4rem] px-4 py-3 sm:px-5">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 shadow-inner shadow-orange-100">
+                                                <Search className="h-5 w-5" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="What do you need help with?"
+                                                value={searchQuery}
+                                                onChange={(e) =>
+                                                    setSearchQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="h-12 w-full border-none bg-transparent text-base font-medium text-slate-800 outline-none placeholder:text-slate-400 focus:ring-0 sm:text-lg"
+                                            />
+                                        </div>
+                                        <motion.button
+                                            type="submit"
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="inline-flex h-14 items-center justify-center rounded-[1.3rem] bg-slate-900 px-6 text-base font-bold text-white shadow-[0_18px_36px_-16px_rgba(15,23,42,0.65)] transition-all hover:bg-orange-600 hover:shadow-[0_20px_40px_-16px_rgba(234,88,12,0.7)] sm:px-8"
+                                        >
+                                            Get Help
+                                        </motion.button>
+                                    </div>
+                                </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
-            <motion.a
-              href="/login"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="group relative px-10 py-5 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-full font-bold text-lg transition-all text-center shadow-2xl shadow-orange-900/50 hover:shadow-orange-500/50 overflow-hidden"
+                                <div className="mt-5 flex flex-wrap items-center gap-2.5 pl-1 text-sm font-medium sm:mt-6">
+                                    <span className="mr-1 inline-flex items-center gap-1 text-slate-500">
+                                        <Sparkles className="h-3.5 w-3.5 text-orange-500" />
+                                        Popular:
+                                    </span>
+                                    {[
+                                        'Cleaning',
+                                        'Mounting',
+                                        'Moving',
+                                        'Repairs',
+                                    ].map((tag) => (
+                                        <motion.button
+                                            key={tag}
+                                            type="button"
+                                            whileHover={{ y: -2, scale: 1.03 }}
+                                            whileTap={{ scale: 0.96 }}
+                                            onClick={() => setSearchQuery(tag)}
+                                            className="rounded-full border border-slate-200/80 bg-white/90 px-4 py-2 text-slate-600 shadow-sm transition-all hover:border-orange-200 hover:bg-orange-50 hover:text-slate-900"
+                                        >
+                                            {tag}
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.form>
+
+                            <motion.div
+                                variants={fadeInUp}
+                                className="mt-8 grid grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-5"
+                            >
+                                {stats.slice(0, 3).map((stat) => {
+                                    const Icon = stat.icon;
+
+                                    return (
+                                        <motion.div
+                                            key={stat.label}
+                                            whileHover={{ y: -4 }}
+                                            className="rounded-[1.7rem] border border-white/80 bg-white/75 p-4 shadow-[0_20px_44px_-30px_rgba(15,23,42,0.3)] ring-1 ring-slate-100/80 backdrop-blur-xl"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600">
+                                                    <Icon className="h-5 w-5" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-lg font-black text-slate-900">
+                                                        {stat.value}
+                                                    </div>
+                                                    <div className="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                                                        {stat.label}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </motion.div>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, x: 30, rotateY: 8 }}
+                            animate={{ opacity: 1, x: 0, rotateY: 0 }}
+                            transition={{ duration: 1 }}
+                            className="relative"
+                            style={{ perspective: '1400px' }}
+                        >
+                            <div className="relative mx-auto w-full max-w-[38rem] lg:max-w-none">
+                                <motion.div
+                                    whileHover={{
+                                        rotateY: -3,
+                                        rotateX: 3,
+                                        scale: 1.008,
+                                    }}
+                                    className="relative overflow-hidden rounded-[2.5rem] border border-white/60 bg-white/30 shadow-[0_40px_90px_-34px_rgba(15,23,42,0.45)] ring-1 ring-white/60"
+                                    style={{ transformStyle: 'preserve-3d' }}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/35 via-transparent to-orange-200/20" />
+                                    <img
+                                        src="/images/hero-handyman.jpg"
+                                        alt="Professional handyman at work"
+                                        className="h-[25rem] w-full object-cover sm:h-[31rem] lg:h-[39rem]"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/15 to-white/10" />
+
+                                    <div className="absolute inset-x-5 top-5 flex items-start justify-between sm:inset-x-6 sm:top-6">
+                                        <div className="rounded-full border border-white/25 bg-white/15 px-3 py-2 text-xs font-bold tracking-[0.2em] text-white uppercase backdrop-blur-xl sm:px-4">
+                                            Premium local marketplace
+                                        </div>
+                                        <div className="hidden rounded-2xl border border-white/20 bg-slate-950/35 px-4 py-3 text-right text-white/90 shadow-lg backdrop-blur-xl sm:block">
+                                            <div className="text-[11px] font-semibold tracking-[0.2em] text-orange-200 uppercase">
+                                                Response time
+                                            </div>
+                                            <div className="mt-1 text-lg font-black">
+                                                Within minutes
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <motion.div
+                                        initial={{ y: 24, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        transition={{
+                                            delay: 0.35,
+                                            duration: 0.75,
+                                        }}
+                                        className="absolute right-5 bottom-5 left-5 rounded-[2rem] border border-white/25 bg-white/88 p-5 shadow-[0_28px_60px_-30px_rgba(15,23,42,0.55)] backdrop-blur-2xl sm:right-6 sm:bottom-6 sm:left-6 sm:p-6"
+                                    >
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex -space-x-3">
+                                                    {featuredServices
+                                                        .slice(0, 3)
+                                                        .map((service) => (
+                                                            <img
+                                                                key={service.id}
+                                                                src={
+                                                                    service.image
+                                                                }
+                                                                alt={
+                                                                    service.name
+                                                                }
+                                                                className="h-11 w-11 rounded-full border-2 border-white object-cover shadow-md sm:h-12 sm:w-12"
+                                                            />
+                                                        ))}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-base font-black text-slate-900">
+                                                            Excellent
+                                                        </span>
+                                                        <div className="flex items-center text-orange-500">
+                                                            {Array.from({
+                                                                length: 5,
+                                                            }).map(
+                                                                (_, index) => (
+                                                                    <Star
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        className="h-3.5 w-3.5 fill-current"
+                                                                    />
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-sm font-medium text-slate-500">
+                                                        Based on 10,000+
+                                                        verified reviews
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 sm:w-auto">
+                                                <div className="rounded-2xl bg-orange-50 px-4 py-3">
+                                                    <div className="text-[11px] font-bold tracking-[0.18em] text-orange-500 uppercase">
+                                                        Available today
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-bold text-slate-900">
+                                                        300+ taskers online
+                                                    </div>
+                                                </div>
+                                                <div className="rounded-2xl bg-slate-100 px-4 py-3">
+                                                    <div className="text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+                                                        Top cities
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-bold text-slate-900">
+                                                        Tripoli, Benghazi
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.92 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.45, duration: 0.65 }}
+                                    className="absolute top-10 -left-3 hidden rounded-[1.6rem] border border-white/60 bg-white/82 p-4 shadow-[0_30px_60px_-32px_rgba(15,23,42,0.4)] backdrop-blur-xl sm:block lg:-left-10"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600">
+                                            <Zap className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-bold tracking-[0.18em] text-slate-400 uppercase">
+                                                Instant match
+                                            </div>
+                                            <div className="text-sm font-black text-slate-900">
+                                                Book in a few taps
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.92 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.55, duration: 0.65 }}
+                                    className="absolute top-24 -right-3 hidden rounded-[1.6rem] border border-orange-200/70 bg-gradient-to-br from-orange-500 to-orange-600 p-4 text-white shadow-[0_32px_70px_-28px_rgba(234,88,12,0.8)] sm:block lg:-right-8"
+                                >
+                                    <div className="text-[11px] font-bold tracking-[0.22em] text-orange-100 uppercase">
+                                        Satisfaction
+                                    </div>
+                                    <div className="mt-1 text-2xl font-black">
+                                        98%
+                                    </div>
+                                    <div className="text-sm text-orange-50/90">
+                                        happy customer rate
+                                    </div>
+                                </motion.div>
+
+                                <div className="absolute inset-x-10 -bottom-8 h-16 rounded-[3rem] bg-orange-900/15 blur-3xl" />
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="relative overflow-hidden bg-white py-20 sm:py-28">
+                <div className="absolute -top-16 right-0 h-[34rem] w-[34rem] rounded-full bg-orange-50/80 blur-3xl" />
+                <div className="absolute bottom-0 left-0 h-[20rem] w-[20rem] rounded-full bg-amber-50 blur-3xl" />
+
+                <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mx-auto mb-12 max-w-3xl text-center sm:mb-16"
+                    >
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50/70 px-4 py-2 text-sm font-semibold text-orange-700">
+                            <Sparkles className="h-4 w-4" />
+                            Explore what people book most
+                        </div>
+                        <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                            Popular projects in{' '}
+                            <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">
+                                your area
+                            </span>
+                        </h2>
+                        <p className="mt-4 text-base leading-7 font-medium text-slate-600 sm:text-lg">
+                            Browse categories with stronger local demand and
+                            connect to vetted professionals faster.
+                        </p>
+                    </motion.div>
+
+                    <motion.div
+                        variants={staggerContainer}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4 lg:gap-6"
+                    >
+                        {categories.map((category) => {
+                            const Icon = category.icon;
+
+                            return (
+                                <motion.button
+                                    key={category.id}
+                                    variants={fadeInUp}
+                                    whileHover={{ y: -6, scale: 1.015 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() =>
+                                        handleCategoryClick(category.id)
+                                    }
+                                    className="group relative flex min-h-[11.5rem] flex-col items-start justify-between overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 p-5 text-left shadow-[0_20px_40px_-32px_rgba(15,23,42,0.25)] transition-all duration-300 hover:border-orange-200 hover:shadow-[0_30px_60px_-28px_rgba(234,88,12,0.22)] sm:min-h-[12.5rem] sm:p-6"
+                                >
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(251,146,60,0.18),_transparent_34%),radial-gradient(circle_at_bottom_left,_rgba(253,186,116,0.18),_transparent_36%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-orange-50 text-orange-600 shadow-inner shadow-orange-100 transition-transform duration-300 group-hover:scale-110">
+                                        <Icon
+                                            className="h-7 w-7"
+                                            strokeWidth={1.7}
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <div className="text-lg font-black text-slate-900 sm:text-xl">
+                                            {category.name}
+                                        </div>
+                                        <div className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 transition-colors group-hover:text-orange-600">
+                                            Explore now
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                        </div>
+                                    </div>
+                                </motion.button>
+                            );
+                        })}
+                    </motion.div>
+                </div>
+            </section>
+
+            <section
+                id="how-it-works"
+                className="relative overflow-hidden bg-[#faf8f5] py-20 sm:py-28"
             >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                Get Started
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </span>
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500"
-                initial={{ x: '100%' }}
-                whileHover={{ x: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </motion.a>
-
-            <motion.button
-              onClick={() => {
-                const howItWorks = document.getElementById('how-it-works');
-                howItWorks?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-10 py-5 bg-white/10 backdrop-blur-md border-2 border-white/30 text-white rounded-full font-bold text-lg hover:bg-white/20 transition-all"
-            >
-              See How It Works
-            </motion.button>
-          </motion.div>
-
-          {/* Trust indicators */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6 }}
-            className="mt-16 grid grid-cols-4 gap-8"
-          >
-            {stats.map((stat, idx) => {
-              const Icon = stat.icon;
-              return (
                 <motion.div
-                  key={idx}
-                  whileHover={{ y: -5, scale: 1.05 }}
-                  className="text-center"
-                >
-                  <Icon className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-                  <div className="font-bold text-white text-2xl mb-1">{stat.value}</div>
-                  <div className="text-sm text-slate-400">{stat.label}</div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
+                    animate={{
+                        scale: [1, 1.15, 1],
+                        opacity: [0.24, 0.42, 0.24],
+                    }}
+                    transition={{ duration: 9, repeat: Infinity }}
+                    className="absolute top-10 -left-16 h-[24rem] w-[24rem] rounded-full bg-orange-200/35 blur-[110px]"
+                />
+                <div className="absolute top-0 right-0 h-[28rem] w-[28rem] rounded-full bg-amber-100/50 blur-[110px]" />
 
-      {/* Enhanced Footer */}
-      <footer className="bg-white border-t border-slate-200 pt-20 pb-8 relative overflow-hidden">
-        {/* Subtle background decoration */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500" />
+                <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mx-auto mb-14 max-w-3xl text-center sm:mb-20"
+                    >
+                        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white/80 px-4 py-2 text-sm font-semibold text-orange-700 shadow-sm">
+                            <Zap className="h-4 w-4" />
+                            Simple and fast
+                        </div>
+                        <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                            Everyday life made{' '}
+                            <span className="text-orange-600">easier</span>
+                        </h2>
+                        <p className="mt-4 text-base leading-7 font-medium text-slate-600 sm:text-lg">
+                            Three clean steps to get trusted help without the
+                            usual hassle.
+                        </p>
+                    </motion.div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-8 mb-16">
-            {/* Brand column */}
-            <div className="col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-orange-500/20">
-                  <img
-                    src="/images/hirfati-logo.jpg"
-                    alt="حرفتي Logo"
-                    className="w-full h-full object-cover"
-                  />
+                    <div className="grid gap-6 md:grid-cols-3 lg:gap-8">
+                        {valueProps.map((item, index) => (
+                            <ParallaxSection key={item.title}>
+                                <motion.div
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true }}
+                                    variants={fadeInUp}
+                                    className="group relative h-full"
+                                >
+                                    <div className="relative flex h-full min-h-[20rem] flex-col overflow-hidden rounded-[2rem] border border-white/80 bg-white/85 p-7 shadow-[0_26px_50px_-34px_rgba(15,23,42,0.28)] ring-1 ring-slate-100/80 backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_36px_70px_-34px_rgba(15,23,42,0.34)] sm:p-8">
+                                        <div
+                                            className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-70`}
+                                        />
+                                        <div className="absolute top-6 right-6 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-sm font-black text-slate-400 shadow-sm transition-all duration-300 group-hover:text-orange-600">
+                                            {index + 1}
+                                        </div>
+                                        <div className="relative">
+                                            <div
+                                                className={`mb-8 inline-flex h-16 w-16 items-center justify-center rounded-2xl ${item.iconWrap} shadow-inner shadow-white/60 transition-transform duration-300 group-hover:scale-110`}
+                                            >
+                                                <item.icon
+                                                    className="h-8 w-8"
+                                                    strokeWidth={1.7}
+                                                />
+                                            </div>
+                                            <h3 className="text-2xl font-black text-slate-900 transition-colors duration-300 group-hover:text-orange-600">
+                                                {item.title}
+                                            </h3>
+                                            <p className="mt-4 text-base leading-7 font-medium text-slate-600">
+                                                {item.desc}
+                                            </p>
+                                        </div>
+                                        <div className="relative mt-auto pt-8">
+                                            <div className="h-1.5 w-20 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-300 group-hover:w-28" />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </ParallaxSection>
+                        ))}
+                    </div>
                 </div>
-                <div>
-                  <div className="font-bold text-slate-900 text-xl">Hirfati</div>
-                  <div className="text-xs text-orange-600">حرفتي</div>
+            </section>
+
+            <section className="relative overflow-hidden bg-white py-20 sm:py-28">
+                <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-orange-50/70 to-transparent" />
+                <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-10 flex flex-col gap-5 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="max-w-2xl">
+                            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700">
+                                <Award className="h-4 w-4" />
+                                Top-rated professionals
+                            </div>
+                            <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                                Featured{' '}
+                                <span className="text-orange-600">
+                                    professionals
+                                </span>
+                            </h2>
+                            <p className="mt-4 text-base leading-7 font-medium text-slate-600 sm:text-lg">
+                                Skilled people with strong ratings, verified
+                                profiles, and polished service quality.
+                            </p>
+                        </div>
+                        <motion.button
+                            whileHover={{ scale: 1.02, x: 4 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => onNavigate('services')}
+                            className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition-all hover:border-orange-200 hover:bg-orange-50"
+                        >
+                            See all
+                            <ArrowRight className="h-4 w-4 text-orange-600 transition-transform group-hover:translate-x-1" />
+                        </motion.button>
+                    </div>
+
+                    <div className="-m-4 overflow-hidden p-4" ref={emblaRef}>
+                        <div className="flex gap-6">
+                            {featuredServices.map((service, index) => (
+                                <div
+                                    key={service.id}
+                                    className="min-w-0 flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_25%]"
+                                >
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 40 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: index * 0.08 }}
+                                        whileHover={{ y: -8 }}
+                                        className="group relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_26px_50px_-36px_rgba(15,23,42,0.28)] transition-all duration-300 hover:border-orange-200 hover:shadow-[0_36px_70px_-34px_rgba(234,88,12,0.28)]"
+                                    >
+                                        <div className="relative px-6 pt-6">
+                                            <div className="absolute inset-x-6 top-0 h-24 rounded-b-[1.6rem] bg-gradient-to-br from-orange-100 via-orange-50 to-amber-50" />
+                                            {service.verified && (
+                                                <div className="absolute top-5 right-5 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white shadow-md">
+                                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500">
+                                                        <CheckCircle
+                                                            className="h-3 w-3 text-white"
+                                                            strokeWidth={3}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="relative flex items-start gap-4">
+                                                <div className="relative">
+                                                    <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-50 shadow-lg">
+                                                        <img
+                                                            src={service.image}
+                                                            alt={service.name}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="absolute -right-1 -bottom-1 h-5 w-5 rounded-full border-2 border-white bg-green-500 shadow-md" />
+                                                </div>
+                                                <div className="min-w-0 flex-1 pt-2">
+                                                    <h4 className="truncate text-lg font-black text-slate-900 transition-colors group-hover:text-orange-600">
+                                                        {service.name}
+                                                    </h4>
+                                                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                                                        {service.service}
+                                                    </p>
+                                                    <div className="mt-2 flex items-center gap-2 text-sm">
+                                                        <span className="inline-flex items-center gap-1 font-bold text-slate-800">
+                                                            <Star className="h-4 w-4 fill-current text-yellow-500" />
+                                                            {service.rating}
+                                                        </span>
+                                                        <span className="text-slate-400">
+                                                            ({service.reviews}{' '}
+                                                            reviews)
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500">
+                                                        <MapPin className="h-3.5 w-3.5" />
+                                                        {service.location}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-1 flex-col px-6 pt-5 pb-6">
+                                            <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-4 text-sm leading-6 font-medium text-slate-600">
+                                                Professional, punctual, and
+                                                highly rated by repeat customers
+                                                looking for dependable quality.
+                                            </div>
+                                            <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-5">
+                                                <div>
+                                                    <div className="text-xs font-bold tracking-[0.18em] text-slate-400 uppercase">
+                                                        Starting price
+                                                    </div>
+                                                    <div className="mt-1 text-lg font-black text-slate-950">
+                                                        {service.price}
+                                                    </div>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3.5 py-2 text-sm font-bold text-orange-600 transition-colors group-hover:bg-orange-100">
+                                                    View Profile
+                                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <p className="text-sm text-slate-600 mb-4">
-                Connecting communities with trusted professionals across Libya.
-              </p>
-              <div className="flex gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <motion.a
-                    key={i}
-                    href="#"
-                    whileHover={{ scale: 1.1, y: -2 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="w-10 h-10 rounded-full bg-slate-100 hover:bg-orange-100 flex items-center justify-center transition-colors"
-                  >
-                    <div className="w-5 h-5 bg-slate-400 rounded-full" />
-                  </motion.a>
-                ))}
-              </div>
-            </div>
+            </section>
 
-            {/* Links columns */}
-            <div>
-              <h5 className="font-bold text-slate-900 mb-4">Discover</h5>
-              <ul className="space-y-3 text-slate-600 text-sm">
-                {['Become a Tasker', 'Services By City', 'All Services', 'Elite Taskers'].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href="#"
-                      whileHover={{ x: 3, color: '#ea580c' }}
-                      className="hover:text-orange-600 transition-colors inline-block"
-                    >
-                      {link}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <section className="relative overflow-hidden bg-slate-950 py-20 sm:py-28">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.16),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(251,191,36,0.12),_transparent_28%)]" />
+                <div className="absolute top-1/2 left-1/2 h-[34rem] w-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/8 blur-[120px]" />
 
-            <div>
-              <h5 className="font-bold text-slate-900 mb-4">Company</h5>
-              <ul className="space-y-3 text-slate-600 text-sm">
-                {['About Us', 'Careers', 'Press', 'Contact Us'].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href="#"
-                      whileHover={{ x: 3, color: '#ea580c' }}
-                      className="hover:text-orange-600 transition-colors inline-block"
-                    >
-                      {link}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+                    <div className="overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/8 via-white/[0.05] to-white/[0.03] p-8 shadow-[0_40px_100px_-50px_rgba(15,23,42,0.8)] backdrop-blur-xl sm:p-10 lg:p-14">
+                        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+                            <div>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 16 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90"
+                                >
+                                    <Heart className="h-4 w-4 fill-current text-pink-400" />
+                                    Join our community
+                                </motion.div>
+                                <motion.h2
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    className="text-4xl leading-[1.02] font-black text-white sm:text-5xl lg:text-6xl"
+                                >
+                                    Don't just dream it.
+                                    <br />
+                                    <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400 bg-clip-text text-transparent">
+                                        Task it.
+                                    </span>
+                                </motion.h2>
+                                <motion.p
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: 0.1 }}
+                                    className="mt-5 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg"
+                                >
+                                    Join a growing community getting everything
+                                    from quick fixes to bigger projects done
+                                    with trusted professionals.
+                                </motion.p>
 
-            <div>
-              <h5 className="font-bold text-slate-900 mb-4">Learn More</h5>
-              <ul className="space-y-3 text-slate-600 text-sm">
-                {['How it Works', 'Safety', 'Blog', 'Terms & Privacy'].map((link) => (
-                  <li key={link}>
-                    <motion.a
-                      href="#"
-                      whileHover={{ x: 3, color: '#ea580c' }}
-                      className="hover:text-orange-600 transition-colors inline-block"
-                    >
-                      {link}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: 0.2 }}
+                                    className="mt-8 flex flex-col gap-3 sm:flex-row"
+                                >
+                                    <motion.a
+                                        href="/login"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="group inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-4 text-base font-bold text-white shadow-[0_24px_50px_-20px_rgba(234,88,12,0.8)] transition-all hover:from-orange-500 hover:to-orange-500"
+                                    >
+                                        Get Started
+                                        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                    </motion.a>
+                                    <motion.button
+                                        type="button"
+                                        onClick={() => {
+                                            const howItWorks =
+                                                document.getElementById(
+                                                    'how-it-works',
+                                                );
+                                            howItWorks?.scrollIntoView({
+                                                behavior: 'smooth',
+                                            });
+                                        }}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/8 px-8 py-4 text-base font-bold text-white backdrop-blur-md transition-all hover:bg-white/14"
+                                    >
+                                        See How It Works
+                                    </motion.button>
+                                </motion.div>
+                            </div>
 
-            <div>
-              <h5 className="font-bold text-slate-900 mb-4">Download App</h5>
-              <p className="text-sm text-slate-600 mb-4">Get the app for the best experience</p>
-              <div className="flex flex-col gap-3">
-                <motion.a
-                  href="#"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors flex items-center gap-2"
-                >
-                  <div className="w-6 h-6 bg-white/20 rounded" />
-                  App Store
-                </motion.a>
-                <motion.a
-                  href="#"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors flex items-center gap-2"
-                >
-                  <div className="w-6 h-6 bg-white/20 rounded" />
-                  Google Play
-                </motion.a>
-              </div>
-            </div>
-          </div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.18 }}
+                                className="grid grid-cols-2 gap-4"
+                            >
+                                {stats.map((stat) => {
+                                    const Icon = stat.icon;
 
-          <div className="text-center text-sm text-slate-400 border-t border-slate-100 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div>&copy; 2025 حرفتي (Hirfati). All rights reserved.</div>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-orange-600 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-orange-600 transition-colors">Terms</a>
-              <a href="#" className="hover:text-orange-600 transition-colors">Cookies</a>
-            </div>
-          </div>
+                                    return (
+                                        <div
+                                            key={stat.label}
+                                            className="rounded-[1.7rem] border border-white/10 bg-white/6 p-5 shadow-inner shadow-white/5"
+                                        >
+                                            <Icon className="h-7 w-7 text-orange-400" />
+                                            <div className="mt-4 text-2xl font-black text-white">
+                                                {stat.value}
+                                            </div>
+                                            <div className="mt-1 text-sm font-medium text-slate-400">
+                                                {stat.label}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer className="relative overflow-hidden border-t border-slate-100 bg-white pt-16 pb-8 sm:pt-20 sm:pb-10">
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-orange-50/60 to-transparent" />
+                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-12 grid gap-8 lg:grid-cols-[1.2fr_repeat(4,0.8fr)] lg:gap-10">
+                        <div className="rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white to-orange-50/40 p-6 shadow-[0_24px_50px_-34px_rgba(15,23,42,0.2)]">
+                            <div className="mb-5 flex items-center gap-3">
+                                <div className="h-12 w-12 overflow-hidden rounded-2xl border border-orange-200/60 shadow-sm">
+                                    <img
+                                        src="/images/hirfati-logo.jpg"
+                                        alt="حرفتي Logo"
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-slate-900">
+                                        Hirfati
+                                    </div>
+                                    <div className="text-xs font-bold tracking-[0.18em] text-orange-600 uppercase">
+                                        Trusted local help
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="max-w-sm text-sm leading-7 font-medium text-slate-600">
+                                Connecting communities with trusted
+                                professionals across Libya through a vibrant,
+                                reliable marketplace.
+                            </p>
+                            <div className="mt-6 flex gap-3">
+                                {[1, 2, 3, 4].map((item) => (
+                                    <motion.a
+                                        key={item}
+                                        href="#"
+                                        whileHover={{ scale: 1.08, y: -2 }}
+                                        whileTap={{ scale: 0.94 }}
+                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-all hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+                                    >
+                                        <div className="h-4 w-4 rounded-full bg-current" />
+                                    </motion.a>
+                                ))}
+                            </div>
+                        </div>
+
+                        <FooterColumn
+                            title="Discover"
+                            links={[
+                                'Become a Tasker',
+                                'Services By City',
+                                'All Services',
+                                'Elite Taskers',
+                            ]}
+                        />
+                        <FooterColumn
+                            title="Company"
+                            links={[
+                                'About Us',
+                                'Careers',
+                                'Press',
+                                'Contact Us',
+                            ]}
+                        />
+                        <FooterColumn
+                            title="Learn More"
+                            links={[
+                                'How it Works',
+                                'Safety',
+                                'Blog',
+                                'Terms & Privacy',
+                            ]}
+                        />
+
+                        <div>
+                            <h5 className="text-sm font-black tracking-[0.16em] text-slate-900 uppercase">
+                                Download App
+                            </h5>
+                            <p className="mt-4 text-sm leading-7 font-medium text-slate-600">
+                                Get the best Hirfati experience on the go.
+                            </p>
+                            <div className="mt-5 flex flex-col gap-3">
+                                {['App Store', 'Google Play'].map((store) => (
+                                    <motion.a
+                                        key={store}
+                                        href="#"
+                                        whileHover={{ scale: 1.03, y: -2 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-[0_18px_30px_-20px_rgba(15,23,42,0.55)] transition-all hover:bg-slate-800"
+                                    >
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12">
+                                            <div className="h-4 w-4 rounded bg-white/80" />
+                                        </div>
+                                        {store}
+                                    </motion.a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 pt-6 text-center text-sm text-slate-400 sm:flex-row sm:text-left">
+                        <div>
+                            &copy; 2025 حرفتي (Hirfati). All rights reserved.
+                        </div>
+                        <div className="flex gap-5 sm:gap-6">
+                            {['Privacy', 'Terms', 'Cookies'].map((item) => (
+                                <a
+                                    key={item}
+                                    href="#"
+                                    className="transition-colors hover:text-orange-600"
+                                >
+                                    {item}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
-      </footer>
-    </div>
-  );
+    );
+}
+
+function FooterColumn({ title, links }: { title: string; links: string[] }) {
+    return (
+        <div>
+            <h5 className="text-sm font-black tracking-[0.16em] text-slate-900 uppercase">
+                {title}
+            </h5>
+            <ul className="mt-4 space-y-3 text-sm font-medium text-slate-600">
+                {links.map((link) => (
+                    <li key={link}>
+                        <motion.a
+                            href="#"
+                            whileHover={{ x: 3 }}
+                            className="inline-flex items-center gap-2 transition-colors hover:text-orange-600"
+                        >
+                            {link}
+                        </motion.a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }

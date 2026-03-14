@@ -14,7 +14,7 @@ import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
 
 export default function TwoFactorChallenge() {
-    const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
+    const [showRecoveryInput, setShowRecpngoveryInput] = useState<boolean>(false);
     const [code, setCode] = useState<string>('');
 
     const authConfigContent = useMemo<{

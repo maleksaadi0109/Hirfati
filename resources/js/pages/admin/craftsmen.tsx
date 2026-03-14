@@ -56,19 +56,36 @@ export default function AdminCraftsmen() {
 
     const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token') || '';
 
+    // Read CSRF token from cookie for stateful API requests
+    const getCsrfToken = () => {
+        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    };
+
     const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'X-XSRF-TOKEN': getCsrfToken(),
     };
+
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const fetchCraftsmen = async () => {
         setLoading(true);
+        setFetchError(null);
         try {
             const res = await fetch(`/api/admin/craftsmen?status=${filter}`, { headers });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                setFetchError(`API error ${res.status}: ${errorData.message || res.statusText}`);
+                setCraftsmen([]);
+                return;
+            }
             const json = await res.json();
             setCraftsmen(json.data || []);
-        } catch {
+        } catch (e: any) {
+            setFetchError(`Network error: ${e.message}`);
             setCraftsmen([]);
         } finally {
             setLoading(false);
@@ -97,12 +114,19 @@ export default function AdminCraftsmen() {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/logout', { method: 'POST', headers });
-        } catch { /* ignore */ }
+    const handleLogout = () => {
         localStorage.clear();
-        window.location.href = '/login';
+        // Submit a form POST to the web logout route (includes CSRF automatically)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/web-logout';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
     };
 
 
@@ -244,6 +268,20 @@ export default function AdminCraftsmen() {
                         </button>
                     </div>
                 </div>
+
+                {/* Error Banner */}
+                {fetchError && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="mb-6 flex items-center gap-3 text-sm font-medium text-red-700 bg-gradient-to-r from-red-50 to-orange-50 p-4 rounded-2xl border border-red-200 shadow-lg shadow-red-100"
+                    >
+                        <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <AlertTriangle className="w-4 h-4 text-white" />
+                        </div>
+                        {fetchError}
+                    </motion.div>
+                )}
 
                 {/* Table / Cards */}
                 {loading ? (
