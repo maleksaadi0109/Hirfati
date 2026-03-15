@@ -15,13 +15,21 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'name' => 'Test User',
                 'password' => 'password',
                 'email_verified_at' => now(),
             ]
         );
+
+        \App\Models\Customer::firstOrCreate(['user_id' => $user->id]);
+
+        $this->call([
+            CustomerOrderTestDataSeeder::class,
+        ]);
     }
 }

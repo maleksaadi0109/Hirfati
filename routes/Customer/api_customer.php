@@ -14,4 +14,10 @@ Route::middleware('auth:sanctum','role:customer')->group(function () {
     Route::put('/client/addresses/{address}', [\App\Http\Controllers\Api\Client\CustomerAddressController::class, 'update']);
     Route::delete('/client/addresses/{address}', [\App\Http\Controllers\Api\Client\CustomerAddressController::class, 'destroy']);
     Route::put('/client/addresses/{address}/default', [\App\Http\Controllers\Api\Client\CustomerAddressController::class, 'setDefault']);
+
+    // Order Routes
+    Route::get('/client/orders', [\App\Http\Controllers\Api\Client\OrderController::class, 'index']);
+    Route::post('/client/orders', [\App\Http\Controllers\Api\Client\OrderController::class, 'store']);
+    Route::get('/client/orders/{order}', [\App\Http\Controllers\Api\Client\OrderController::class, 'show']);
+    Route::patch('/client/orders/{order}/cancel', [\App\Http\Controllers\Api\Client\OrderController::class, 'cancel']);
 });

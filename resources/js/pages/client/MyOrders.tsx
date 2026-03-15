@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import {
     Calendar,
@@ -13,13 +14,18 @@ import {
     User,
     XCircle,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 
-type OrderStatus = 'active' | 'completed' | 'cancelled';
+type OrderStatus =
+    | 'pending'
+    | 'confirmed'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled';
 
 interface ClientOrder {
-    id: string;
+    id: number;
     service: string;
     proName: string;
     proRating: number;
@@ -32,89 +38,93 @@ interface ClientOrder {
     progress: number;
 }
 
-const mockOrders: ClientOrder[] = [
-    {
-        id: 'HRF-10231',
-        service: 'AC Repair and Cleaning',
-        proName: 'Khaled Yousef',
-        proRating: 5,
-        date: 'Mar 18, 2026',
-        time: '10:00 AM',
-        location: 'Andalus, Tripoli',
-        status: 'active',
-        total: 120,
-        payment: 'Pending',
-        progress: 55,
-    },
-    {
-        id: 'HRF-10212',
-        service: 'Deep Home Cleaning',
-        proName: 'Sarah Mahmoud',
-        proRating: 4.8,
-        date: 'Mar 12, 2026',
-        time: '12:30 PM',
-        location: 'Hay Al-Andalus, Tripoli',
-        status: 'completed',
-        total: 95,
-        payment: 'Paid',
-        progress: 100,
-    },
-    {
-        id: 'HRF-10178',
-        service: 'Kitchen Plumbing Fix',
-        proName: 'Omar Khaled',
-        proRating: 4.6,
-        date: 'Mar 04, 2026',
-        time: '09:00 AM',
-        location: 'Siahiya, Tripoli',
-        status: 'cancelled',
-        total: 60,
-        payment: 'Pending',
-        progress: 0,
-    },
-    {
-        id: 'HRF-10161',
-        service: 'Lighting Installation',
-        proName: 'Ahmed Ben Ali',
-        proRating: 4.9,
-        date: 'Feb 27, 2026',
-        time: '05:00 PM',
-        location: 'Benghazi Center',
-        status: 'completed',
-        total: 150,
-        payment: 'Paid',
-        progress: 100,
-    },
-];
-
 const tabs: Array<{ key: 'all' | OrderStatus; label: string }> = [
     { key: 'all', label: 'All Orders' },
-    { key: 'active', label: 'Active' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'in_progress', label: 'In Progress' },
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
 ];
 
 export default function MyOrders() {
     const [activeTab, setActiveTab] = useState<'all' | OrderStatus>('all');
+    const [orders, setOrders] = useState<ClientOrder[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
-    const filteredOrders = useMemo(() => {
-        if (activeTab === 'all') return mockOrders;
-        return mockOrders.filter((order) => order.status === activeTab);
+    useEffect(() => {
+        const fetchOrders = async () => {
+            setIsLoading(true);
+            setLoadError(null);
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = token
+                    ? { Authorization: `Bearer ${token}` }
+                    : undefined;
+
+                const response = await axios.get('/api/client/orders', {
+                    headers,
+                    params:
+                        activeTab === 'all' ? undefined : { status: activeTab },
+                });
+
+                const rawOrders = response.data?.data?.orders;
+                const orderList = Array.isArray(rawOrders)
+                    ? rawOrders
+                    : Array.isArray(rawOrders?.data)
+                      ? rawOrders.data
+                      : [];
+
+                const normalizedOrders: ClientOrder[] = orderList.map(
+                    (order: any) => ({
+                        id: Number(order.id),
+                        service: String(order.service ?? 'Service'),
+                        proName: String(order.proName ?? 'Professional'),
+                        proRating: Number(order.proRating ?? 0),
+                        date: String(order.date ?? '-'),
+                        time: String(order.time ?? '-'),
+                        location: String(order.location ?? 'No address set'),
+                        status: order.status as OrderStatus,
+                        total: Number(order.total ?? 0),
+                        payment: (order.payment === 'Paid'
+                            ? 'Paid'
+                            : 'Pending') as 'Paid' | 'Pending',
+                        progress: Number(order.progress ?? 0),
+                    }),
+                );
+
+                setOrders(normalizedOrders);
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+                setLoadError('Failed to load orders. Please try again.');
+                setOrders([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchOrders();
     }, [activeTab]);
 
+    const filteredOrders = useMemo(() => {
+        if (activeTab === 'all') return orders;
+        return orders.filter((order) => order.status === activeTab);
+    }, [activeTab, orders]);
+
     const stats = useMemo(() => {
-        const active = mockOrders.filter(
-            (order) => order.status === 'active',
+        const active = orders.filter((order) =>
+            ['pending', 'confirmed', 'in_progress'].includes(order.status),
         ).length;
-        const completed = mockOrders.filter(
+        const completed = orders.filter(
             (order) => order.status === 'completed',
         ).length;
-        const saved = mockOrders
+        const saved = orders
             .filter((order) => order.status === 'completed')
             .reduce((sum, order) => sum + order.total, 0);
 
         return { active, completed, saved };
-    }, []);
+    }, [orders]);
 
     return (
         <DashboardLayout title="My Orders">
@@ -182,7 +192,20 @@ export default function MyOrders() {
 
                     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.55fr_0.45fr]">
                         <div className="space-y-5">
-                            {filteredOrders.length ? (
+                            {isLoading ? (
+                                <div className="rounded-[1.7rem] border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                                    <Receipt className="mx-auto h-10 w-10 animate-pulse text-orange-300" />
+                                    <h3 className="mt-4 text-xl font-black text-slate-900">
+                                        Loading orders...
+                                    </h3>
+                                </div>
+                            ) : loadError ? (
+                                <div className="rounded-[1.7rem] border border-rose-200 bg-rose-50 px-6 py-14 text-center shadow-sm">
+                                    <h3 className="text-xl font-black text-rose-700">
+                                        {loadError}
+                                    </h3>
+                                </div>
+                            ) : filteredOrders.length ? (
                                 filteredOrders.map((order, idx) => (
                                     <motion.article
                                         key={order.id}
@@ -207,7 +230,7 @@ export default function MyOrders() {
                                                     />
                                                 </div>
                                                 <p className="mt-1 text-xs font-bold tracking-[0.16em] text-slate-400 uppercase">
-                                                    Order {order.id}
+                                                    Order #{order.id}
                                                 </p>
                                             </div>
                                             <div className="text-right">
@@ -273,6 +296,7 @@ export default function MyOrders() {
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    onClick={() => router.get(`/client/orders/${order.id}`)}
                                                     className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition-all hover:bg-orange-600 sm:text-sm"
                                                 >
                                                     View Details
@@ -388,10 +412,28 @@ function StatusBadge({ status }: { status: OrderStatus }) {
         );
     }
 
+    if (status === 'confirmed') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-[11px] font-bold text-sky-700 uppercase">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Confirmed
+            </span>
+        );
+    }
+
+    if (status === 'in_progress') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1 text-[11px] font-bold text-indigo-700 uppercase">
+                <Clock3 className="h-3.5 w-3.5" />
+                In Progress
+            </span>
+        );
+    }
+
     return (
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-700 uppercase">
             <Clock3 className="h-3.5 w-3.5" />
-            Active
+            Pending
         </span>
     );
 }

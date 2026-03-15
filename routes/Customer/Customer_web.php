@@ -22,6 +22,12 @@ use Inertia\Inertia;
      Route::get('/client/my-orders', function () {
          return Inertia::render('client/MyOrders');
      })->name('client.my-orders');
+ 
+      Route::get('/client/orders/{order}', function (string $orderId) {
+          return Inertia::render('client/OrderDetails', [
+              'orderId' => $orderId,
+          ]);
+      })->name('client.orders.show');
 
       Route::get('/client/profile', function () {
           return Inertia::render('client/Profile');

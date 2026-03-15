@@ -5,9 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\User;
-use App\Models\Review;
-use App\Models\Booking;
 
 class Customer extends Model
 {
@@ -38,5 +35,10 @@ class Customer extends Model
     public function addresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(CustomerOrder::class);
     }
 }

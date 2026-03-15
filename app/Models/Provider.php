@@ -4,10 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\User;
-use App\Models\Portfolio;
-use App\Models\Booking;
-use App\Models\Review;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Provider extends Model
 {
@@ -47,5 +44,10 @@ class Provider extends Model
     public function reviews()
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(CustomerOrder::class);
     }
 }
