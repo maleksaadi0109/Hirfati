@@ -247,80 +247,56 @@ graph TB
 Browser → Inertia.js (page navigation) ─┐
 Browser → Axios (API calls) ────────────┤
                                          ▼
-                               Laravel Routes (web.php + api routes)
+                                Laravel Routes (web.php + api routes)
                                          │
-                              ┌──────────┼──────────┐
-                              ▼          ▼          ▼
-                          Auth MW    Role MW    Throttle MW
-                              │          │          │
-                              └──────────┼──────────┘
-                                         ▼
-                                   Controllers
-                                    │       │
-                              ┌─────┘       └─────┐
-                              ▼                   ▼
-                         Eloquent              Events
-                         (PostgreSQL)     (MessageSent → Reverb)
+                               ┌──────────┼──────────┐
+                               ▼          ▼          ▼
+                           Auth MW    Role MW    Throttle MW
+                               │          │          │
+                               └──────────┼──────────┘
+                                          ▼
+                                    Controllers
+                                     │       │
+                               ┌─────┘       └─────┐
+                               ▼                   ▼
+                          Eloquent              Events
+                          (PostgreSQL)     (MessageSent → Reverb)
 ```
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Structure (Detailed)
 
-```
-malieek-project/
-├── app/
-│   ├── Events/
-│   │   └── MessageSent.php              # WebSocket broadcast event
-│   ├── Http/
-│   │   ├── Controllers/Api/
-│   │   │   ├── Auth/
-│   │   │   │   ├── RegisterController     # OTP-based registration
-│   │   │   │   ├── LoginController        # Token + session login
-│   │   │   │   ├── ForgotPasswordController # Code-based password reset
-│   │   │   │   └── EmailVerificationController
-│   │   │   ├── Admin/
-│   │   │   │   └── CraftsmanApprovalController  # Approve/reject providers
-│   │   │   ├── Client/
-│   │   │   │   ├── OrderController        # Order CRUD + cancel
-│   │   │   │   ├── CustomerAddressController # Address CRUD + set default
-│   │   │   │   └── UpdateUserInfoController  # Profile update
-│   │   │   ├── Messages/
-│   │   │   │   └── MessageController      # Real-time chat (shared by client & provider)
-│   │   │   └── Provider/
-│   │   │       └── ResubmitApplicationController
-│   │   └── Requests/                      # Form request validators
-│   └── Models/
-│       ├── User.php                       # Roles, 2FA, Sanctum tokens
-│       ├── Customer.php                   # Customer profile
-│       ├── Provider.php                   # Bio, profession, hourly rate, availability
-│       ├── CustomerOrder.php              # Full order with financials
-│       ├── CustomerAddress.php            # Geolocation-enabled addresses
-│       ├── Message.php                    # Order-scoped chat messages
-│       └── Portfolio.php                  # Provider work samples
-├── routes/
-│   ├── web.php                            # Inertia page routes + role-based redirects
-│   ├── Auth/api_auth.php                  # Registration, login, password reset, email verify
-│   ├── Customer/api_customer.php          # Orders, addresses, messages, profile
-│   ├── Provider/api_provider.php          # Messages, application resubmission
-│   └── Admin/api_admin.php               # Craftsman approval management
-├── resources/js/pages/
-│   ├── marketplace/                       # Public landing page + 3D scene
-│   │   ├── index.tsx
-│   │   ├── marketplace.css
-│   │   └── components/
-│   │       ├── LandingPage.tsx            # 66KB hero, categories, featured pros
-│   │       ├── FloatingToolsScene.tsx      # Three.js 3D animated tools
-│   │       ├── FloatingShapes.tsx          # Ambient geometric animations
-│   │       ├── ListingPage.tsx            # Provider listing/search
-│   │       ├── ProviderProfile.tsx        # Individual provider page
-│   │       └── ChatInterface.tsx          # Chat UI component
-│   ├── auth/                              # 14 auth pages (login, register, OTP, 2FA, etc.)
-│   ├── client/                            # Client dashboard, orders, messages, profile, addresses
-│   ├── worker/                            # Worker dashboard + messages
-│   └── admin/                             # Craftsman list + detail review
-└── database/migrations/                   # 25 migrations (users, orders, messages, addresses, etc.)
-```
+This project follows a clean, modular architecture. Below is a breakdown of how the core directories and files are organized.
+
+### 🏗️ Core Application (`app/`)
+The `app` directory contains the core PHP code for the Hirfati backend.
+
+- **`app/Actions/`**: Reusable pieces of business logic.
+    - **`Auth/`**: Registration, login, logout, password resets, and email verification. Using actions keeps controllers clean.
+    - **`Location/`**: Geolocation logic for updating user locations and finding nearby pros.
+- **`app/Http/Controllers/Api/`**: Your API endpoints, organized by role:
+    - **`Admin/`**: Craftsman approval and user management.
+    - **`Client/`**: Order CRUD, address book, dashboard metrics, and discovery.
+    - **`Provider/`**: Application resubmission and professional features.
+    - **`Messages/`**: Shared chat logic for order-scoped conversations.
+- **`app/Http/Resources/`**: Transforms Eloquent models into clean JSON for the React frontend (e.g., `CustomerOrderResource`).
+- **`app/Models/`**: Database entities (User, Customer, Provider, Order, Message, etc.).
+
+### 🎨 Frontend (`resources/js/`)
+The React application powered by Inertia.js 2.x.
+
+- **`components/ui/`**: Core UI components (Buttons, Inputs, Modals, etc.) built with Shadcn.
+- **`pages/client/`**: Full screens for the customer experience (Dashboard, Orders, Profile).
+- **`pages/worker/`**: Dashboard and profiles for the service providers.
+- **`pages/marketplace/`**: Public-facing landing page, search, and 3D tool animations.
+- **`layouts/`**: Wrappers that provide the shell and navigation (e.g., `DashboardLayout.tsx`).
+
+### ⚙️ Backend Logic & Config
+- **`routes/`**: Separated by role (Admin, Auth, Customer, Provider) for easier maintenance.
+- **`database/migrations/`**: Every table's blueprint (users, orders, messages, etc.).
+- **`config/`**: System-wide settings for auth, mail, filesystems, and websockets (Reverb).
+- **`storage/app/public/`**: Assets like profile photos and verification documents.
 
 ---
 
